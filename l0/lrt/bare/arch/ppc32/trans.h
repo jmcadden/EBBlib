@@ -61,41 +61,41 @@ lrt_trans_idbase(void)
   return (uintptr_t)LMem;
 }
 
-static inline struct lrt_trans *
-lrt_trans_id2lt(uintptr_t i)
+static inline lrt_trans_ltrans *
+lrt_trans_id2lt(lrt_trans_id i)
 {
-  return (struct lrt_trans *)i;
+  return (lrt_trans_ltrans *)i;
 }
 
-static inline uintptr_t
-lrt_trans_lt2id(struct lrt_trans *t)
+static inline lrt_trans_id
+lrt_trans_lt2id(lrt_trans_ltrans *t)
 {
-  return (uintptr_t)(t);
+  return (lrt_trans_id)t;
 }
 
-static inline struct lrt_trans *
-lrt_trans_id2gt(uintptr_t i)
+static inline lrt_trans_gtrans *
+lrt_trans_id2gt(lrt_trans_id i)
 {
-  return (struct lrt_trans *)(((uintptr_t)lrt_trans_gmem()) + 
+  return (lrt_trans_gtrans *)(((uintptr_t)lrt_trans_gmem()) + 
 			      lrt_trans_offset(lrt_trans_idbase(), i));
 }
 
-static inline uintptr_t
-lrt_trans_gt2id(struct lrt_trans *t)
+static inline lrt_trans_id
+lrt_trans_gt2id(lrt_trans_gtrans *t)
 {
-  return (uintptr_t)(lrt_trans_idbase() + 
-		     lrt_trans_offset((uintptr_t)lrt_trans_gmem(),
-				      (uintptr_t)t));
+  return (lrt_trans_id))(lrt_trans_idbase() + 
+			 lrt_trans_offset((uintptr_t)lrt_trans_gmem(),
+					  (uintptr_t)t));
 }
 
-static inline struct lrt_trans *
-lrt_trans_gt2lt(struct lrt_trans *gt)
+static inline lrt_trans_ltrans *
+lrt_trans_gt2lt(lrt_trans_gtrans *gt)
 {
   return lrt_trans_id2lt(lrt_trans_gt2id(gt));
 }
 
-static inline struct lrt_trans *
-lrt_trans_lt2gt(struct lrt_trans *lt)
+static inline lrt_trans_gtrans *
+lrt_trans_lt2gt(lrt_trans_ltrans *lt)
 {
   return lrt_trans_id2gt(lrt_trans_lt2id(lt));
 }
