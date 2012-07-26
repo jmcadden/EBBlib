@@ -27,9 +27,10 @@
 	.section .init.text, "ax"
 	.balign 8
 _start:
-	nop
+	nop /* <- address 0x0 */
 
 	mfspr	r21, SPRN_PIR
+  /* jump if not core0 */
 	cmpwi	r21, 0
 	bgt	spin_secondary
 
@@ -50,7 +51,11 @@ _start:
 	bctrl
 spin:
 	b	spin
-
+  
+/* core0 responsible for updating entry_secondary location after its initial
+ * bring up. Secondary cores, in turn, will loop until entry+secondary value
+ * has been updated branch to that location. 
+ */
 entry_secondary: .long -1
 spin_secondary:
 	bl 	1f

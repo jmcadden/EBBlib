@@ -19,22 +19,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+#include <config.h>
 
-#include <stdint.h>
+#include <inttypes.h>
+#include <stdbool.h>
+
+#include <l0/EBBMgrPrim.h>
+#include <l0/EventMgrPrimImp.h>
+#include <l0/MemMgrPrim.h>
+#include <l0/cobj/CObjEBBRootMultiImp.h>
 #include <lrt/assert.h>
-#include <l0/lrt/bare/arch/ppc32/mem.h>
 
-uintptr_t
-lrt_mem_start() {
+EBBRC
+EventMgrPrimExpInit(void)
+{
   LRT_Assert(0);
 }
-
-uintptr_t
-lrt_mem_end() {
-  LRT_Assert(0);
-}
- 
-void lrt_mem_init() {
-  LRT_Assert(0);
-}
-

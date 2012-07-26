@@ -24,10 +24,26 @@
 
 #include <arch/powerpc/cpu.h>
 #include <arch/powerpc/mmu.h>
-#include <l0/lrt/bare/arch/ppc32/pic.h>
-#include <l0/lrt/bare/arch/ppc32/trans.h>
+#include <l0/lrt/trans.h>
 #include <lrt/assert.h>
 
+void
+lrt_trans_preinit(int cores) 
+{
+  LRT_Assert(0);
+}
+
+void
+lrt_trans_specific_init() 
+{
+  LRT_Assert(0);
+}
+
+void lrt_trans_invalidate_rltrans(lrt_event_loc el, lrt_trans_id oid)
+{
+  LRT_Assert(0);
+}
+/*
 static uint8_t theGMem[LRT_TRANS_TBLSIZE] 
 __attribute__((aligned(LRT_TRANS_TBLSIZE)));
 
@@ -118,3 +134,4 @@ lrt_trans_id2rlt(lrt_pic_id picid, uintptr_t oid)
 
   return lrt_trans_id2lt(oid);
 }
+*/

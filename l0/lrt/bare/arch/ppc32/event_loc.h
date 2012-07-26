@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 by Project SESA, Boston University
+ * Copyright (C) 2012 by Project SESA, Boston University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,22 +19,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+#ifndef __LRT_EVENT_LOC_H__
+#error "should be included from l0/lrt/event_loc.h"
+#endif
 
-#include <stdint.h>
 #include <lrt/assert.h>
-#include <l0/lrt/bare/arch/ppc32/mem.h>
+#include <arch/cpu.h>
+#include <arch/powerpc/regs.h>
 
-uintptr_t
-lrt_mem_start() {
-  LRT_Assert(0);
-}
+STATIC_ASSERT(sizeof(lrt_event_loc) == 4,
+              "event_loc is not the right size");
 
-uintptr_t
-lrt_mem_end() {
-  LRT_Assert(0);
+static inline lrt_event_loc
+lrt_my_event_loc(void)
+{
+  return get_spr(SPRN_PIR);
 }
- 
-void lrt_mem_init() {
-  LRT_Assert(0);
-}
-

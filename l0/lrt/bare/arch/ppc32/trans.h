@@ -32,72 +32,72 @@
 //These should be virtual addresses
 // I chose these based on examining the TLB handed to me and working
 // around mappings that existed. This is not robust
-#define GMem (0xFFE00000) 
-#define LMem (0xFFD00000) 
+#define LRT_TRANS_GMEM (0xFFE00000) 
+#define LRT_TRANS_LMEM (0xFFD00000)
 
+extern void lrt_trans_preinit(int cores);
 extern void lrt_trans_init(void);
 
-static inline void *
+static inline lrt_trans_gtrans *
 lrt_trans_gmem(void)
 {
-  return (void *)GMem;
+  return (lrt_trans_gtrans *)LRT_TRANS_GMEM;
 }
 
-static inline void *
+static inline lrt_trans_ltrans *
 lrt_trans_lmem(void)
 {
-  return (void *)LMem;
+  return (lrt_trans_ltrans *)LRT_TRANS_LMEM;
 }
 
-static inline uintptr_t
-lrt_trans_offset(uintptr_t base, uintptr_t t) 
-{
-  return (uintptr_t)(t - base);
-}
-
-static inline uintptr_t
+static inline lrt_trans_id
 lrt_trans_idbase(void)
 {
-  return (uintptr_t)LMem;
+  return lrt_trans_lmem();
 }
 
-static inline struct lrt_trans *
-lrt_trans_id2lt(uintptr_t i)
+static inline lrt_trans_ltrans *
+lrt_trans_id2lt(lrt_trans_id id)
 {
-  return (struct lrt_trans *)i;
+  return id;
 }
 
-static inline uintptr_t
-lrt_trans_lt2id(struct lrt_trans *t)
+static inline lrt_trans_id
+lrt_trans_lt2id(lrt_trans_ltrans *lt)
 {
-  return (uintptr_t)(t);
+  return lt;
 }
 
-static inline struct lrt_trans *
-lrt_trans_id2gt(uintptr_t i)
+static inline lrt_trans_gtrans *
+lrt_trans_id2gt(lrt_trans_id id)
 {
-  return (struct lrt_trans *)(((uintptr_t)lrt_trans_gmem()) + 
-			      lrt_trans_offset(lrt_trans_idbase(), i));
+  lrt_trans_gtrans *gmem = lrt_trans_gmem();
+  ptrdiff_t index = id - lrt_trans_idbase();
+  return gmem + index;
 }
 
-static inline uintptr_t
-lrt_trans_gt2id(struct lrt_trans *t)
+static inline lrt_trans_id
+lrt_trans_gt2id(lrt_trans_gtrans *gt)
 {
-  return (uintptr_t)(lrt_trans_idbase() + 
-		     lrt_trans_offset((uintptr_t)lrt_trans_gmem(),
-				      (uintptr_t)t));
+  lrt_trans_gtrans *gmem = lrt_trans_gmem();
+  ptrdiff_t index = gt - gmem;
+  return lrt_trans_idbase() + index;
 }
 
-static inline struct lrt_trans *
-lrt_trans_gt2lt(struct lrt_trans *gt)
+static inline lrt_trans_ltrans *
+lrt_trans_gt2lt(lrt_trans_gtrans *gt)
 {
-  return lrt_trans_id2lt(lrt_trans_gt2id(gt));
+  lrt_trans_gtrans *gmem = lrt_trans_gmem();
+  ptrdiff_t index = gt - gmem;
+  return lrt_trans_lmem() + index;
 }
 
-static inline struct lrt_trans *
-lrt_trans_lt2gt(struct lrt_trans *lt)
+static inline lrt_trans_gtrans *
+lrt_trans_lt2gt(lrt_trans_ltrans *lt)
 {
-  return lrt_trans_id2gt(lrt_trans_lt2id(lt));
+  lrt_trans_ltrans *lmem = lrt_trans_lmem();
+  ptrdiff_t index = lt - lmem;
+  return lrt_trans_gmem() + index;
 }
 
 #endif

@@ -19,22 +19,51 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
-#include <stdint.h>
+#include <config.h>
+#include <l0/lrt/event.h>
 #include <lrt/assert.h>
-#include <l0/lrt/bare/arch/ppc32/mem.h>
 
-uintptr_t
-lrt_mem_start() {
-  LRT_Assert(0);
+lrt_event_loc
+lrt_num_event_loc()
+{
+  LRT_Assert(0); 
 }
 
-uintptr_t
-lrt_mem_end() {
-  LRT_Assert(0);
+lrt_event_loc
+lrt_next_event_loc(lrt_event_loc l)
+{
+  LRT_Assert(0); 
 }
- 
-void lrt_mem_init() {
-  LRT_Assert(0);
+
+
+void *lrt_event_init(void *myloc)
+{ 
+  LRT_Assert(0); 
+}
+void lrt_event_preinit(int cores)
+{ 
+  LRT_Assert(0); 
+}
+void lrt_event_trigger_event(lrt_event_num num,
+    enum lrt_event_loc_desc desc,
+    lrt_event_loc loc)
+{ 
+  LRT_Assert(0); 
+}
+void lrt_event_route_irq(struct IRQ_t *isrc,
+    lrt_event_num num,
+    enum lrt_event_loc_desc desc,
+    lrt_event_loc loc)
+{ 
+  LRT_Assert(0); 
+}
+void lrt_event_altstack_push(uintptr_t val)
+{ 
+  LRT_Assert(0); 
+}
+
+uintptr_t lrt_event_altstack_pop(void)
+{ 
+  LRT_Assert(0); 
 }
 

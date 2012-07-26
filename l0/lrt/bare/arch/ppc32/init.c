@@ -41,7 +41,7 @@ clear_bss(void)
     *i = 0;
   }
 }
-
+/*
 int
 ipow(int base, int exp)
 {
@@ -55,45 +55,48 @@ ipow(int base, int exp)
   }
   return result;
 }
+*/
 
 void __attribute__((noreturn))
 init(void) 
 {
-  extern uint8_t _vec_start[];
-  set_ivpr(_vec_start);
-
-  //IVORS in the order that fixed registers
-  // are set
-  set_spr(SPRN_IVOR1, 0x000);
-  set_spr(SPRN_IVOR0, 0x100);
-  set_spr(SPRN_IVOR15, 0x200);
-  set_spr(SPRN_IVOR2, 0x300);
-  set_spr(SPRN_IVOR3, 0x400);
-  set_spr(SPRN_IVOR4, 0x500);
-  set_spr(SPRN_IVOR5, 0x600);
-  set_spr(SPRN_IVOR6, 0x700);
-  set_spr(SPRN_IVOR7, 0x800);
-  set_spr(SPRN_IVOR8, 0x900);
-  set_spr(SPRN_IVOR9, 0xA00);
-  set_spr(SPRN_IVOR10, 0xB00);
-  set_spr(SPRN_IVOR11, 0xC00);
-  set_spr(SPRN_IVOR12, 0xD00);
-  set_spr(SPRN_IVOR13, 0xE00);
-  set_spr(SPRN_IVOR14, 0xF00);
-
-  //setup MSR
-  msr msr = get_msr();
-  //enable machine check
-  msr.me = 1;
-  //make sure external interrupts are off
-  msr.ee = 0;
-  //enable fpu
-  msr.fp = 1;
-  set_msr(msr);
-
+/*
+*  extern uint8_t _vec_start[];
+*  set_ivpr(_vec_start);
+*
+*  //IVORS in the order that fixed registers
+*  // are set
+*  set_spr(SPRN_IVOR1, 0x000);
+*  set_spr(SPRN_IVOR0, 0x100);
+*  set_spr(SPRN_IVOR15, 0x200);
+*  set_spr(SPRN_IVOR2, 0x300);
+*  set_spr(SPRN_IVOR3, 0x400);
+*  set_spr(SPRN_IVOR4, 0x500);
+*  set_spr(SPRN_IVOR5, 0x600);
+*  set_spr(SPRN_IVOR6, 0x700);
+*  set_spr(SPRN_IVOR7, 0x800);
+*  set_spr(SPRN_IVOR8, 0x900);
+*  set_spr(SPRN_IVOR9, 0xA00);
+*  set_spr(SPRN_IVOR10, 0xB00);
+*  set_spr(SPRN_IVOR11, 0xC00);
+*  set_spr(SPRN_IVOR12, 0xD00);
+*  set_spr(SPRN_IVOR13, 0xE00);
+*  set_spr(SPRN_IVOR14, 0xF00);
+*
+*  //setup MSR
+*  msr msr = get_msr();
+*  //enable machine check
+*  msr.me = 1;
+*  //make sure external interrupts are off
+*  msr.ee = 0;
+*  //enable fpu
+*  msr.fp = 1;
+*  set_msr(msr);
+*/
   clear_bss();
   stdout = mailbox_init();
   printf("Mailbox initialized\n");
+  while(1);
 
   /* for (int i = 0; i < 64; i++) { */
   /*   tlb_word_0 w0; */
@@ -139,5 +142,5 @@ init(void)
   /*   } */
   /* } */
   
-  lrt_pic_init(lrt_start_isr);
+//  lrt_pic_init(lrt_start_isr);
 }
