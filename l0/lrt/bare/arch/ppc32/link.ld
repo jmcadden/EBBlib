@@ -29,11 +29,6 @@ SECTIONS
 	. = 0x0;
 	kstart = .;
 
-	.init :
-	{
-		*(.init.text);
-		*(.init.stack);
-	}
 	.isr :
 	{
 		*(.isr);
@@ -67,5 +62,15 @@ SECTIONS
 		*(.note*);
 		*(.comment);
 	}
+	
+	preinit = .;
+	.init ALIGN (16K):
+	{
+		initstart = .;
+		*(.init.text);
+		*(.init.data);
+		initend = .;
+	}
+	. = ALIGN(16K);
 	kend = .;	
 }

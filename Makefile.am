@@ -76,7 +76,7 @@ AM_LDFLAGS += -m32 -mno-sdata -static -nodefaultlibs -nostdlib \
 	-Wl,-G,0 -T $(top_srcdir)/l0/lrt/bare/arch/ppc32/link.ld
 LDADD = -lgcc
 %.uimage: %.bin
-	mkimage -A ppc -O linux -T kernel -C none -a 0 -e 0 -n "EbbOS" -d $< $@
+	mkimage -A ppc -O linux -T kernel -C none -a 0x0 -e $(shell objdump -t $(basename $<) | grep " _start" | awk '{print $$1}') -n "EbbOS" -d $< $@
 %.bin: %
 	objcopy -O binary $< $@
 endif

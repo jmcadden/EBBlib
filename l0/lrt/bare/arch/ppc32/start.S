@@ -27,8 +27,6 @@
 	.section .init.text, "ax"
 	.balign 8
 _start:
-	nop /* <- address 0x0 */
-
 	mfspr	r21, SPRN_PIR
   /* jump if not core0 */
 	cmpwi	r21, 0
@@ -72,7 +70,7 @@ spin_secondary:
 	mtlr	r2
 	blr
 	
-	.section .init.stack
-	.align 16
-	.space 0x4000
+	.section .init.data
+	.align 4
+	.space 0x1000
 _mini_stack:
