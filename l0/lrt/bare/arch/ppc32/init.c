@@ -59,7 +59,7 @@ ipow(int base, int exp)
 
 
 void __attribute__((section(".init.text"), noreturn))
-init(uintptr_t fdt) 
+init(struct fdt *fdt) 
 {
   extern uint8_t _vec_start[];
   set_ivpr(_vec_start);
@@ -151,23 +151,23 @@ init(uintptr_t fdt)
   //this synchronizes, so the shadow TLB gets flushed and our new mappings are picked up
   asm volatile ("isync"); 
 
-/*   if (fdt->magic != fdt_validmagic) { */
-/*     while (1) */
-/*       ; */
-/*   } */
+  if (fdt->magic != fdt_validmagic) {
+    while (1)
+      ;
+  }
   
-/*   //check if where we copy the fdt is overlapping with the fdt */
-/*   extern char kend[]; */
-/*   if (((uintptr_t)kend + fdt->size) >= (uintptr_t)fdt) { */
-/*     while (1) */
-/*       ; */
-/*   } */
+  //check if where we copy the fdt is overlapping with the fdt
+  extern char kend[];
+  if (((uintptr_t)kend + fdt->size) >= (uintptr_t)fdt) {
+    while (1)
+      ;
+  }
 
-/*   uintptr_t *newfdt = (uintptr_t *)kend; */
-/*   uintptr_t *oldfdt = (uintptr_t *)fdt; */
-/*   for (int i = 0; i < (fdt->size / sizeof(uintptr_t)); i++) { */
-/*     newfdt[i] = oldfdt[i]; */
-/*   } */
+  uintptr_t *newfdt = (uintptr_t *)kend;
+  uintptr_t *oldfdt = (uintptr_t *)fdt;
+  for (int i = 0; i < (fdt->size / sizeof(uintptr_t)); i++) {
+    newfdt[i] = oldfdt[i];
+  }
 
   //Map in mailbox
   //TODO: TLB map function
@@ -248,7 +248,7 @@ init(uintptr_t fdt)
     }
   }// end print TLB
   printf("Success!\n");
-  printf("FDT: %x\n", fdt);
+  //printf("FDT: %x\n", fdt);
   while(1);
   
 //  lrt_pic_init(lrt_start_isr);

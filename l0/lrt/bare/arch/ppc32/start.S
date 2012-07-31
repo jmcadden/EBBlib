@@ -27,6 +27,8 @@
 	.section .init.text, "ax"
 	.balign 8
 _start:
+	li	r20, 0x90
+	mtspr	SPRN_SPRG0, r20
 	mfspr	r21, SPRN_PIR
   /* jump if not core0 */
 	cmpwi	r21, 0

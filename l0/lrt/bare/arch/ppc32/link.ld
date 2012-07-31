@@ -34,7 +34,7 @@ SECTIONS
 		*(.isr);
 	}	
 
-	.text ALIGN (4k) :
+	.text ALIGN (4K) :
 	{
 		*(.text)
 	}
@@ -62,13 +62,12 @@ SECTIONS
 		*(.note*);
 		*(.comment);
 	}
-	
+
 	.init ALIGN (16K):
 	{
 		*(.init.text);
 		*(.init.data);
 	}
-
-	. = ALIGN(16K);
+	
 	kend = .;	
 }
