@@ -22,21 +22,4 @@
  * THE SOFTWARE.
  */
 
-#include <stdint.h>
-
-const uint32_t fdt_validmagic = 0xd00dfeed;
-
-struct fdt {
-  uint32_t magic;
-  uint32_t size;
-  uint32_t offset_struct;
-  uint32_t offset_strings;
-  uint32_t offset_mmap;
-  uint32_t version;
-  uint32_t last_compatible_version;
-  uint32_t boot_cpuid;
-  uint32_t string_size;
-  uint32_t struct_size;
-};
-
 #endif
