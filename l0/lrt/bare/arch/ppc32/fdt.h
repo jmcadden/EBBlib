@@ -1,5 +1,7 @@
+#ifndef ARCH_POWERPC_FDT_H
+#define ARCH_POWERPC_FDT_H
 /*
- * Copyright (C) 2011 by Project SESA, Boston University
+ * Copyright (C) 2012 by Project SESA, Boston University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,55 +22,21 @@
  * THE SOFTWARE.
  */
 
-OUTPUT_ARCH(powerpc:common)
-OUTPUT_FORMAT(elf32-powerpc)
-ENTRY(_start)
+#include <stdint.h>
 
-SECTIONS
-{
-	. = 0x0;
-	kstart = .;
+const uint32_t fdt_validmagic = 0xd00dfeed;
 
-	.isr :
-	{
-		*(.isr);
-	}	
+struct fdt {
+  uint32_t magic;
+  uint32_t size;
+  uint32_t offset_struct;
+  uint32_t offset_strings;
+  uint32_t offset_mmap;
+  uint32_t version;
+  uint32_t last_compatible_version;
+  uint32_t boot_cpuid;
+  uint32_t string_size;
+  uint32_t struct_size;
+};
 
-	.text ALIGN (4k) :
-	{
-		*(.text)
-	}
-
-	.rodata ALIGN (4K) : 
-	{
-		*(.rodata)
-	}
-	.data ALIGN (4K) : 
-	{
-		*(.data)
-	}
-
-	.bss : 
-	{
-		sbss = .;
-		*(COMMON)
-		*(.bss)
-		ebss = .;
-	}
-	
-	/DISCARD/ :
-	{
-		*(.eh_frame);
-		*(.note*);
-		*(.comment);
-	}
-	
-	.init ALIGN (16K):
-	{
-		*(.init.text);
-		*(.init.data);
-	}
-
-	. = ALIGN(16K);
-	kend = .;	
-}
+#endif
