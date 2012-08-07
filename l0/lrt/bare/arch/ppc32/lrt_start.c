@@ -22,23 +22,16 @@
 
 #include <config.h>
 
-#include <l0/lrt/bare/arch/ppc32/mem.h>
-#include <l0/lrt/bare/arch/ppc32/pic.h>
-#include <l0/lrt/bare/arch/ppc32/trans.h>
+#include <l0/lrt/mem.h>
+#include <l0/lrt/trans.h>
 #include <lrt/io.h>
-
-#include <l0/lrt/bare/arch/ppc32/bic.h>
+#include <l1/App.h>
 
 void
 lrt_start(void)
 {
-  lrt_printf("lrt_start called!\n");
-  lrt_pic_ackipi();
-
   lrt_mem_init();
   lrt_trans_init();
-
-  lrt_printf("lrt initialized\n");
 
   app_start(); 
 }

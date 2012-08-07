@@ -21,28 +21,67 @@
  */
 #include <config.h>
 #include <l0/lrt/event.h>
+#include <l0/lrt/bare/arch/ppc32/bic.h>
+#include <l0/lrt/mem.h>
 #include <lrt/assert.h>
+
+static lrt_event_loc num_loc;
 
 lrt_event_loc
 lrt_num_event_loc()
 {
-  LRT_Assert(0); 
+  //FIXME: for smp
+  return 1;
 }
 
 lrt_event_loc
 lrt_next_event_loc(lrt_event_loc l)
 {
-  LRT_Assert(0); 
+  //FIXME: for smp
+  return l;
 }
 
+static void __attribute__((noreturn))
+lrt_event_loop(void)
+{
+  LRT_Assert(0);
+}
+
+static uintptr_t **altstacks;
 
 void *lrt_event_init(void *myloc)
 { 
-  LRT_Assert(0); 
+#define STACK_SIZE (1 << 14)
+  char *myStack = lrt_mem_alloc(STACK_SIZE, 16, lrt_my_event_loc());
+
+  altstacks[lrt_my_event_loc()] = 
+    lrt_mem_alloc(4096, 16, lrt_my_event_loc());
+
+  asm volatile (
+		"mr 1, %[stack];"
+		"bl lrt_start"
+		:
+		: [stack] "r" (&myStack[STACK_SIZE]));
+  lrt_event_loop();
 }
+
 void lrt_event_preinit(int cores)
 { 
-  LRT_Assert(0); 
+  num_loc = cores;
+
+  //disable timers
+  tcr tcr;
+  tcr.val = get_spr(SPRN_TCR);
+  tcr.wie = 0;
+  tcr.die = 0;
+  tcr.fie = 0;
+  set_spr(SPRN_TCR, tcr.val);
+
+  //disable and clear all IRQs on BIC
+  bic_init();
+  bic_disable_and_clear_all();
+  
+  altstacks = lrt_mem_alloc(sizeof(char *) * cores, 8, 0);
 }
 void lrt_event_trigger_event(lrt_event_num num,
     enum lrt_event_loc_desc desc,

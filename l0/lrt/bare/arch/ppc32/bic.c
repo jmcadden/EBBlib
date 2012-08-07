@@ -23,6 +23,8 @@
 #include <stdint.h>
 
 #include <l0/lrt/bare/arch/ppc32/bic.h>
+#include <l0/lrt/bare/arch/ppc32/fdt.h>
+#include <l0/lrt/bare/arch/ppc32/mmu.h>
 #include <lrt/assert.h>
 
 struct bg_irqctrl_group {
@@ -47,8 +49,7 @@ struct bg_irqctrl {
   volatile unsigned int core_mchk[4];
 } __attribute__((packed));
 
-static struct bg_irqctrl * const bg_irqctrl = 
-  (struct bg_irqctrl *)0xfffde000;
+static struct bg_irqctrl *bg_irqctrl;
 
 void
 bic_dump()
@@ -129,4 +130,21 @@ bic_clear_irq(uint8_t group, uint8_t irq)
   LRT_Assert(group < BIC_NUM_GROUPS);
   LRT_Assert(irq < BIC_NUM_IRQS);
   bg_irqctrl->groups[group].status_clr = 1 << (31 - irq);
+}
+
+void
+bic_init()
+{
+  struct fdt_node *bic = fdt_get("/interrupt-controller");
+  LRT_Assert(bic);
+  
+  struct fdt_node *reg = fdt_get_in_node(bic, "reg");
+  LRT_Assert(reg);
+
+  uint64_t paddr = fdt_read_prop_u64(reg, 0);
+  uint32_t memsize = fdt_read_prop_u32(reg, 8);
+
+  //assume it is aligned
+  bg_irqctrl = tlb_map(paddr, memsize,
+		       TLB_INHIBIT | TLB_GUARDED);
 }

@@ -38,3 +38,4 @@ void bic_enable_irq(uint8_t group, uint8_t irq,
 		    enum bic_int_type type, int8_t loc);
 void bic_raise_irq(uint8_t group, uint8_t irq);
 void bic_clear_irq(uint8_t group, uint8_t irq);
+void bic_init(void);

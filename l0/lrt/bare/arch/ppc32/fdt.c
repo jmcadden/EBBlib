@@ -81,16 +81,17 @@ fdt_init(struct fdt *oldfdt)
     return false;
   }
   //check if where we copy the fdt is overlapping with the fdt
-  extern char kend[];
-  if (((uintptr_t)kend + oldfdt->size) >= (uintptr_t)oldfdt) {
+  extern char *mem_start; //from mem.c
+  if (((uintptr_t)mem_start + oldfdt->size) >= (uintptr_t)oldfdt) {
       return false;
   }
 
-  uintptr_t *newfdt = (uintptr_t *)kend;
+  uintptr_t *newfdt = (uintptr_t *)mem_start;
   for (int i = 0; i < (fdt->size / sizeof(uintptr_t)); i++) {
     newfdt[i] = ((uintptr_t *)oldfdt)[i];
   }
   fdt=(struct fdt*)newfdt;
+  mem_start += fdt->size;
   return true;
 }
 
@@ -170,6 +171,12 @@ fdt_get_in_node(struct fdt_node *node, char *path) {
     }
   } while (level > 0);
   return NULL;
+}
+
+uint32_t
+fdt_read_prop_u32(struct fdt_node *prop, int offset) {
+  struct fdt_prop *p = (struct fdt_prop *)prop;
+  return *(uint32_t *)&(p->data[offset]);
 }
 
 uint64_t

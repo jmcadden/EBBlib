@@ -32,26 +32,26 @@ static int tlb_entry = 2;
 void *
 tlb_map(uint64_t paddr, int size, int flags)
 {
-  if (size & ((1 << 10) - 1)) {
+  if ((size & ((1 << 10) - 1)) ||
+      (__builtin_popcount(size) != 1)) {
     return NULL;
   }
-  int newsize = size >> 10;
-  if (__builtin_popcount(newsize) != 1 ||
-      !(SUPPORTED_TLB_PAGE_SIZE & newsize)) {
+
+  int tlb_size = (31 - __builtin_clz(size >> 10)) / 2; //log2(size >> 10) / 2
+
+  if (!(SUPPORTED_TLB_PAGE_SIZE & (1 << tlb_size))) {
     return NULL;
   }
   
   uintptr_t vaddr = (uintptr_t)vmem_start;
   vaddr += size - 1;
   vaddr &= ~(size - 1);
-  vmem_start = (char *)vaddr;
+  vmem_start = (char *)vaddr + size;
 
   tlb_word_0 t0;
   t0.val = 0;
   t0.epn = vaddr >> 10;
   t0.v = 1;
-  int tlb_size = 31 - __builtin_clz(newsize);
-  tlb_size /= 2;
   t0.size = tlb_size;
 
   tlb_word_1 t1;

@@ -22,19 +22,36 @@
 
 #include <stdint.h>
 #include <lrt/assert.h>
-#include <l0/lrt/bare/arch/ppc32/mem.h>
+#include <l0/lrt/mem.h>
+
+extern char kend[];
+char *mem_start = kend;
+
+struct lrt_mem_desc *bootmem;
+
+void lrt_mem_preinit(int cores) {
+  bootmem = (struct lrt_mem_desc *)mem_start;
+  char *ptr = mem_start + (sizeof(struct lrt_mem_desc) * cores);
+  int num_bytes = (1 << 31) - (uintptr_t)ptr;
+  for (int i = 0; i < cores; i++) {
+    bootmem[i].start = bootmem[i].current = ptr;
+    ptr += num_bytes / cores;
+    bootmem[i].end = ptr;
+  }
+}
 
 uintptr_t
 lrt_mem_start() {
-  LRT_Assert(0);
+  //we give the current pointer, all other memory
+  // will never be freed
+  return (uintptr_t)bootmem[lrt_my_event_loc()].current;
 }
 
 uintptr_t
 lrt_mem_end() {
-  LRT_Assert(0);
+  return (uintptr_t)bootmem[lrt_my_event_loc()].end;
 }
  
 void lrt_mem_init() {
-  LRT_Assert(0);
 }
 

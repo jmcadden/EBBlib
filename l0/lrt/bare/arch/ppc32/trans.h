@@ -26,14 +26,13 @@
 #include <stdint.h>
 
 #define LRT_TRANS_PAGESIZE (1 << 12) //4 K
-#define LRT_TRANS_PAGES (4)
+#define LRT_TRANS_PAGES (256)
+//this works out to 1M which is a valid mapping size
 #define LRT_TRANS_TBLSIZE (LRT_TRANS_PAGESIZE * LRT_TRANS_PAGES) 
 
 //These should be virtual addresses
-// I chose these based on examining the TLB handed to me and working
-// around mappings that existed. This is not robust
-#define LRT_TRANS_GMEM (0xFFE00000) 
-#define LRT_TRANS_LMEM (0xFFD00000)
+#define LRT_TRANS_GMEM (0xFFF00000) 
+#define LRT_TRANS_LMEM (0xFFE00000)
 
 extern void lrt_trans_preinit(int cores);
 extern void lrt_trans_init(void);
