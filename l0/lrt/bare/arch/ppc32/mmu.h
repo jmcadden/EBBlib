@@ -1,6 +1,5 @@
-#ifndef LRT_BARE_STRING_H
-#define LRT_BARE_STRING_H
-
+#ifndef L0_LRT_BARE_ARCH_PPC32_MMU_H
+#define L0_LRT_BARE_ARCH_PPC32_MMU_H
 /*
  * Copyright (C) 2011 by Project SESA, Boston University
  *
@@ -23,10 +22,11 @@
  * THE SOFTWARE.
  */
 
-#include <stddef.h>
+#include <stdint.h>
 
-void bzero(void *s, size_t n);
-void *memcpy(void *dest, const void *src, size_t n);
-int strcmp(const char *s1, const char *s2);
+static const int TLB_INHIBIT = 1 << 0;
+static const int TLB_GUARDED = 1 << 1;
+
+void *tlb_map(uint64_t paddr, int size, int flags);
 
 #endif

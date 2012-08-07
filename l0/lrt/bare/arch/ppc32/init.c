@@ -26,6 +26,7 @@
 #include <l0/lrt/bare/arch/ppc32/fdt.h>
 #include <arch/powerpc/mmu.h>
 #include <arch/powerpc/regs.h>
+#include <l0/lrt/bare/arch/ppc32/fdt.h>
 #include <l0/lrt/bare/arch/ppc32/lrt_start.h>
 #include <l0/lrt/bare/arch/ppc32/mailbox.h>
 #include <l0/lrt/bare/arch/ppc32/pic.h>
@@ -151,6 +152,12 @@ init(struct fdt *fdt)
   //this synchronizes, so the shadow TLB gets flushed and our new mappings are picked up
   asm volatile ("isync"); 
 
+  clear_bss();
+  fdt_init(fdt);
+  stdout = mailbox_init();
+  printf("Mailbox initialized\n");
+
+#if 0
   //Map in mailbox
   //TODO: TLB map function
   uint64_t mb_phys = 0x7ffffc000LL; //FIXME: get from FDT
@@ -181,10 +188,11 @@ init(struct fdt *fdt)
 		);  
 
   // Final setup
-  clear_bss();
-  stdout = mailbox_init();
-  printf("Mailbox initialized\n");
-
+  extern char kend[];
+  printf("kend = %x\n", (uintptr_t)kend);
+  printf("node = %x\n", (uintptr_t)node);
+#endif
+#if 0
   // Print TLB
   for (int i = 0; i < 64; i++) {
     tlb_word_0 w0;
@@ -229,6 +237,7 @@ init(struct fdt *fdt)
       printf("\n\n");
     }
   }// end print TLB
+  #endif
   printf("Success!\n");
   //printf("FDT: %x\n", fdt);
   while(1);

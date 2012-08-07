@@ -49,9 +49,8 @@
 .balign (1 << 16)
 .globl _vec_start
 _vec_start:	
-	EX_LOOP(machine_check)
 	EX_LOOP(critical_input)
-	EX_LOOP(debug) 
+	EX_LOOP(machine_check)
 	EX_LOOP(data_storage) 
 	EX_LOOP(instruction_storage) 
 	EX_LOOP(external) 
@@ -65,5 +64,6 @@ _vec_start:
 	EX_LOOP(watchdog_timer) 
 	EX_LOOP(data_tlb_error) 
 	EX_LOOP(instruction_tlb_error) 
+	EX_LOOP(debug) 
 _vec_end:
 

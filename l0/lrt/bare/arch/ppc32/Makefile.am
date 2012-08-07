@@ -24,11 +24,15 @@ l0_lrt_bare_arch_ppc32_sources = \
 	l0/lrt/bare/arch/ppc32/event.c \
 	l0/lrt/bare/arch/ppc32/EventMgrPrimImp.c \
 	l0/lrt/bare/arch/ppc32/EventMgrPrimExpImp.c \
+	l0/lrt/bare/arch/ppc32/fdt.c \
+	l0/lrt/bare/arch/ppc32/fdt.h \
 	l0/lrt/bare/arch/ppc32/init.c \
 	l0/lrt/bare/arch/ppc32/isr.S \
 	l0/lrt/bare/arch/ppc32/mailbox.c \
 	l0/lrt/bare/arch/ppc32/mailbox.h \
 	l0/lrt/bare/arch/ppc32/mem.c \
+	l0/lrt/bare/arch/ppc32/mmu.c \
+	l0/lrt/bare/arch/ppc32/mmu.h \
 	l0/lrt/bare/arch/ppc32/start.S \
 	l0/lrt/bare/arch/ppc32/trans.c 
 

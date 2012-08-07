@@ -23,6 +23,8 @@
  * THE SOFTWARE.
  */
 
+#include <lrt/assert.h>
+
 static const uint8_t TLB_1K = 0;
 static const uint8_t TLB_4K = 1;
 static const uint8_t TLB_16K = 2;

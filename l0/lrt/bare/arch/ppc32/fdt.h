@@ -22,4 +22,15 @@
  * THE SOFTWARE.
  */
 
+#include <stdbool.h>
+
+struct fdt;
+struct fdt_node;
+bool fdt_init(struct fdt *oldfdt);
+struct fdt_node *fdt_get_root_node(void);
+struct fdt_node *fdt_get(char *path);
+struct fdt_node *fdt_get_in_node(struct fdt_node *node, char *path);
+uint64_t fdt_read_prop_u64(struct fdt_node *prop, int offset);
+
+
 #endif

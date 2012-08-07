@@ -25,6 +25,8 @@
 #include <stdint.h>
 
 #include <l0/lrt/bare/stdio.h>
+#include <l0/lrt/bare/arch/ppc32/fdt.h>
+#include <l0/lrt/bare/arch/ppc32/mmu.h>
 #include <lrt/string.h>
 
 struct bgp_mailbox_desc {
@@ -49,8 +51,7 @@ typedef struct bgp_mailbox {
 #define BGP_ALERT_OUT(core)	        (0x80000000U >> (24 + core))
 #define BGP_ALERT_IN(core)	        (0x80000000U >> (28 + core))
 
-//FIXME: read from FDT, these are hardcoded
-static bgp_mailbox * const bgp_mbox = (bgp_mailbox *)(0xfffff400);
+static bgp_mailbox *bgp_mbox;
 #define BGP_MBOX_SIZE (0xf8)
 static char bgp_mbox_buffer[BGP_MBOX_SIZE];
 static uintptr_t bgp_mbox_buffer_len = 0;
@@ -106,8 +107,19 @@ FILE mailbox = {
   .write = mailbox_write
 };
 
+static const int MB_MAP_SIZE = 1 << 10; //1K
+
 FILE *
 mailbox_init()
 {
+  struct fdt_node *console = fdt_get("/jtag/console0");
+  struct fdt_node *reg = fdt_get_in_node(console, "reg");
+  uint64_t paddr = fdt_read_prop_u64(reg, 0);
+  paddr |= 0x700000000LL; //THIS IS BECAUSE UBOOT IS BROKEN  
+  uint64_t paddr_aligned = paddr & ~(MB_MAP_SIZE - 1); //align
+  uintptr_t vaddr = (uintptr_t)tlb_map(paddr_aligned, MB_MAP_SIZE,
+				       TLB_INHIBIT | TLB_GUARDED);
+  bgp_mbox = (bgp_mailbox *)(vaddr + (uintptr_t)(paddr_aligned - paddr));
+  
   return &mailbox;
 }
