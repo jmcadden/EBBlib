@@ -50,12 +50,8 @@ CObject(HelloWorld_Parallel) {
 EBBRC
 HelloWorld_Parallel_start(AppRef _self)
 {
-  static volatile int lock;
-  while (!__sync_bool_compare_and_swap(&lock, 0, 1))
-    ;
   lrt_printf("Hello world from event location %d\n",
              MyEventLoc());
-  lock = 0;
 
   static volatile int barrier_init;
   static struct barrier_s bar;

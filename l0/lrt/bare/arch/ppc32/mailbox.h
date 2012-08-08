@@ -25,6 +25,6 @@
 
 #include <l0/lrt/bare/stdio.h>
 
-FILE *mailbox_init();
-
+FILE *mailbox_init(void);
+void mailbox_secondary_init(void);
 #endif

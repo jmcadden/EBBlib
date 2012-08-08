@@ -23,7 +23,12 @@
  * THE SOFTWARE.
  */
 
-//FIXME:
-#include <l0/lrt/bare/arch/amd64/mem.h>
 
+#ifndef __LRT_MEM_H__
+#error "Should only be included through l0/lrt/mem.h"
+#endif
+
+#ifdef ARCH_AMD64
+#include <l0/lrt/bare/arch/amd64/mem.h>
+#endif
 #endif

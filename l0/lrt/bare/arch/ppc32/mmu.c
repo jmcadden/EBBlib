@@ -24,13 +24,17 @@
 #include <stdint.h>
 
 #include <arch/powerpc/450/mmu.h>
+#include <l0/lrt/event.h>
 #include <l0/lrt/bare/arch/ppc32/mmu.h>
 
 static char *vmem_start = (char *)(1 << 31); //2 GB
-static int tlb_entry = 2;
+
+static int tlb_entry[4] = {
+  2, 2, 2, 2
+};
 
 void *
-tlb_map(uint64_t paddr, int size, int flags)
+tlb_map_fixed(uint64_t paddr, uintptr_t vaddr, int size, int flags)
 {
   if ((size & ((1 << 10) - 1)) ||
       (__builtin_popcount(size) != 1)) {
@@ -42,11 +46,6 @@ tlb_map(uint64_t paddr, int size, int flags)
   if (!(SUPPORTED_TLB_PAGE_SIZE & (1 << tlb_size))) {
     return NULL;
   }
-  
-  uintptr_t vaddr = (uintptr_t)vmem_start;
-  vaddr += size - 1;
-  vaddr &= ~(size - 1);
-  vmem_start = (char *)vaddr + size;
 
   tlb_word_0 t0;
   t0.val = 0;
@@ -80,9 +79,31 @@ tlb_map(uint64_t paddr, int size, int flags)
 		: [word0] "r" (t0.val),
 		  [word1] "r" (t1.val),
 		  [word2] "r" (t2.val),
-		  [entry] "r" (tlb_entry) 
+		  [entry] "r" (tlb_entry[lrt_my_event_loc()]) 
 		);  
-  tlb_entry++;
-
+  tlb_entry[lrt_my_event_loc()]++;
   return (void *)vaddr;
 }
+
+void *
+tlb_map(uint64_t paddr, int size, int flags)
+{
+  if ((size & ((1 << 10) - 1)) ||
+      (__builtin_popcount(size) != 1)) {
+    return NULL;
+  }
+
+  int tlb_size = (31 - __builtin_clz(size >> 10)) / 2; //log2(size >> 10) / 2
+
+  if (!(SUPPORTED_TLB_PAGE_SIZE & (1 << tlb_size))) {
+    return NULL;
+  }
+  
+  uintptr_t vaddr = (uintptr_t)vmem_start;
+  vaddr += size - 1;
+  vaddr &= ~(size - 1);
+  vmem_start = (char *)vaddr + size;
+
+  return tlb_map_fixed(paddr, vaddr, size, flags);
+}
+

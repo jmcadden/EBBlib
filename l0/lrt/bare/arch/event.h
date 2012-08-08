@@ -23,6 +23,9 @@
 #error "Should only be included through l0/lrt/event.h"
 #endif
 
+#ifdef ARCH_PPC
+#include <l0/lrt/bare/arch/ppc32/event.h>
+#endif
 #ifdef ARCH_AMD64
 #include <l0/lrt/bare/arch/amd64/event.h>
 #endif

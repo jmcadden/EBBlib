@@ -105,6 +105,9 @@ FILE mailbox = {
 
 static const int MB_MAP_SIZE = 1 << 10; //1K
 
+static uint64_t paddr_aligned;
+static uintptr_t vaddr;
+
 FILE *
 mailbox_init()
 {
@@ -112,9 +115,9 @@ mailbox_init()
   struct fdt_node *reg = fdt_get_in_node(console, "reg");
   uint64_t paddr = fdt_read_prop_u64(reg, 0);
   paddr |= 0x700000000LL; //THIS IS BECAUSE UBOOT IS BROKEN  
-  uint64_t paddr_aligned = paddr & ~(MB_MAP_SIZE - 1); //align
-  uintptr_t vaddr = (uintptr_t)tlb_map(paddr_aligned, MB_MAP_SIZE,
-				       TLB_INHIBIT | TLB_GUARDED);
+  paddr_aligned = paddr & ~(MB_MAP_SIZE - 1); //align
+  vaddr = (uintptr_t)tlb_map(paddr_aligned, MB_MAP_SIZE,
+			     TLB_INHIBIT | TLB_GUARDED);
   bgp_mbox = (bgp_mailbox *)(vaddr + (uintptr_t)(paddr_aligned - paddr));
   
   bgp_mbox_size = fdt_read_prop_u32(reg, 8);
@@ -127,4 +130,11 @@ mailbox_init()
   bgp_dcr_mask = fdt_read_prop_u32(dcr_mask, 0);
 
   return &mailbox;
+}
+
+void
+mailbox_secondary_init()
+{
+  tlb_map_fixed(paddr_aligned, vaddr, MB_MAP_SIZE,
+		TLB_INHIBIT | TLB_GUARDED);
 }

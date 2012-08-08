@@ -24,53 +24,42 @@
 #include <arch/powerpc/regs.h>
 	
 	.globl _start
-	.section .init.text, "ax"
+	.section .init.entry, "ax"
 	.balign 8
 _start:
-	li	r20, 0x90
-	mtspr	SPRN_SPRG0, r20
-	mfspr	r21, SPRN_PIR
-  /* jump if not core0 */
-	cmpwi	r21, 0
-	bgt	spin_secondary
+	// setup MSR
+	mfmsr r21
+	/* diable external interupts*/
+	andi. r21, r21, 0x7fff
+	/* enable fpu & machine check */
+	ori   r21, r21, 0x3000
+	mtmsr r21
+	
+	//set small data areas to 0
+	li	r13, 0
+	li	r2, 0
 
 	//load stack into r1
 	lis	r1, _mini_stack@h
 	ori	r1, r1, _mini_stack@l
 	subi	r1, r1, 112 //ask about this
 
-	//set small data areas to 0
-	li	r13, 0
-	li	r2, 0
+	mfspr	r21, SPRN_PIR
+	lis	r22, entry_secondary@h
+	ori	r22, r22, entry_secondary@l
+1:
+	dcbi	0, r22
+	lwz	r23, 0(r22)
+	cmpw	r23, r21
+	bne	1b
 
-	//load init addr into r20
-	lis	r20, init@h
-	ori	r20, r20, init@l
-	
-	mtctr	r20
-	bctrl
+	bl init_mapping
+	bl init
 spin:
 	b	spin
   
-/* core0 responsible for updating entry_secondary location after its initial
- * bring up. Secondary cores, in turn, will loop until entry+secondary value
- * has been updated branch to that location. 
- */
-entry_secondary: .long -1
-spin_secondary:
-	bl 	1f
-1:
-	mflr 	r1
-	subi 	r1, r1, 8 //get entry word
-2:
-	dcbi	0, r1
-	lwz	r2, 0(r1)
-	addi	r3, r2, 1
-	cmpwi	r3, 0
-	beq	2b
-	iccci	0, 0
-	mtlr	r2
-	blr
+	.globl entry_secondary
+entry_secondary: .long 0
 	
 	.section .init.data
 	.align 4

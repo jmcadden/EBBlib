@@ -98,22 +98,22 @@
 /*
  * Interrupt Vector IDs
  */
-#define IV_machine_check			0
-#define IV_critical_input			1
-#define IV_debug				2
-#define IV_data_storage				3
-#define IV_instruction_storage			4
-#define IV_external				5
-#define IV_alignment				6
-#define IV_program				7
-#define IV_floating_point_unavailable		8
-#define IV_system_call				9
-#define IV_auxiliary_processor_unavailable	10
-#define IV_decrementer				11
-#define IV_fixed_interval_timer			12
-#define IV_watchdog_timer			13
-#define IV_data_tlb_error			14
-#define IV_instruction_tlb_error		15
+#define IV_critical_input			0
+#define IV_machine_check			1
+#define IV_data_storage				2
+#define IV_instruction_storage			3
+#define IV_external				4
+#define IV_alignment				5
+#define IV_program				6
+#define IV_floating_point_unavailable		7
+#define IV_system_call				8
+#define IV_auxiliary_processor_unavailable	9
+#define IV_decrementer				10
+#define IV_fixed_interval_timer			11
+#define IV_watchdog_timer			12
+#define IV_data_tlb_error			13
+#define IV_instruction_tlb_error		14
+#define IV_debug				15
 #define IV_vector_unavailable			16
 #define IV_embedded_floating_point_data		17
 #define IV_embedded_floating_point_round	18

@@ -1,7 +1,6 @@
 bin_PROGRAMS =
 include apps/bindtst/Makefile.am
 include apps/contst/Makefile.am
-include apps/eventtiming/Makefile.am
 include apps/eventtst/Makefile.am
 include apps/helloworld/Makefile.am
 include apps/helloworld_parallel/Makefile.am
@@ -15,6 +14,7 @@ endif
 if LRT_BARE
 if x86_64
 include apps/ethtst/Makefile.am
+include apps/eventtiming/Makefile.am
 endif
 if powerpc
 #include apps/treetst/Makefile.am

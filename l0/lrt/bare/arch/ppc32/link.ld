@@ -65,6 +65,7 @@ SECTIONS
 
 	.init ALIGN (16K):
 	{
+		*(.init.entry);
 		*(.init.text);
 		*(.init.data);
 	}

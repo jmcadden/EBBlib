@@ -19,13 +19,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+#ifndef __LRT_EVENT_H__
+#error "Should only be included through l0/lrt/event.h"
+#endif
 
-#include <arch/powerpc/asdef.h>
-
-	.globl lrt_start_isr
-lrt_start_isr:
-	lis	r20, lrt_start@h
-	ori	r20, r20, lrt_start@l
-	mtctr	r20
-	bctrl
-	rfi
+#define LRT_EVENT_NUM_EVENTS (256)

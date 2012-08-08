@@ -27,6 +27,7 @@
 static const int TLB_INHIBIT = 1 << 0;
 static const int TLB_GUARDED = 1 << 1;
 
+void *tlb_map_fixed(uint64_t, uintptr_t, int, int);
 void *tlb_map(uint64_t paddr, int size, int flags);
 
 #endif

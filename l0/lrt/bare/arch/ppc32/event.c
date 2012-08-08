@@ -20,37 +20,69 @@
  * THE SOFTWARE.
  */
 #include <config.h>
+#include <arch/cpu.h>
+#include <l0/EventMgrPrim.h>
 #include <l0/lrt/event.h>
 #include <l0/lrt/bare/arch/ppc32/bic.h>
 #include <l0/lrt/mem.h>
 #include <lrt/assert.h>
+#include <sync/misc.h>
 
 static lrt_event_loc num_loc;
 
 lrt_event_loc
 lrt_num_event_loc()
 {
-  //FIXME: for smp
-  return 1;
+  return num_loc;
 }
 
 lrt_event_loc
 lrt_next_event_loc(lrt_event_loc l)
 {
-  //FIXME: for smp
-  return l;
+  return (l + 1) % num_loc;
 }
 
 static void __attribute__((noreturn))
 lrt_event_loop(void)
 {
-  LRT_Assert(0);
+  //wait for eventmgr to be initialized
+  EventMgrPrimId id;
+  do {
+    id = ACCESS_ONCE(theEventMgrPrimId);
+    cpu_relax();
+  } while (id == 0 || id == (EventMgrPrimId)-1);
+  
+  while(1) {
+    COBJ_EBBCALL(theEventMgrPrimId, enableInterrupts);
+  }
 }
 
 static uintptr_t **altstacks;
 
 void *lrt_event_init(void *myloc)
 { 
+  extern uint8_t _vec_start[];
+  set_ivpr(_vec_start);
+  //IVORS in the order that fixed registers
+  // are set
+  set_spr(SPRN_IVOR0, 0x000);
+  set_spr(SPRN_IVOR1, 0x100);
+  set_spr(SPRN_IVOR2, 0x200);
+  set_spr(SPRN_IVOR3, 0x300);
+  set_spr(SPRN_IVOR4, 0x400);
+  set_spr(SPRN_IVOR5, 0x500);
+  set_spr(SPRN_IVOR6, 0x600);
+  set_spr(SPRN_IVOR7, 0x700);
+  set_spr(SPRN_IVOR8, 0x800);
+  set_spr(SPRN_IVOR9, 0x900);
+  set_spr(SPRN_IVOR10, 0xA00);
+  set_spr(SPRN_IVOR11, 0xB00);
+  set_spr(SPRN_IVOR12, 0xC00);
+  set_spr(SPRN_IVOR13, 0xD00);
+  set_spr(SPRN_IVOR14, 0xE00);
+  set_spr(SPRN_IVOR15, 0xF00);
+
+
 #define STACK_SIZE (1 << 14)
   char *myStack = lrt_mem_alloc(STACK_SIZE, 16, lrt_my_event_loc());
 
@@ -59,14 +91,21 @@ void *lrt_event_init(void *myloc)
 
   asm volatile (
 		"mr 1, %[stack];"
-		"bl lrt_start"
 		:
-		: [stack] "r" (&myStack[STACK_SIZE]));
+		: [stack] "r" (&myStack[STACK_SIZE])
+		: "memory");
+
+  extern long entry_secondary;
+  entry_secondary = lrt_next_event_loc(lrt_my_event_loc());
+  
+  extern void lrt_start(void);
+  lrt_start();
   lrt_event_loop();
 }
 
 void lrt_event_preinit(int cores)
 { 
+
   num_loc = cores;
 
   //disable timers
@@ -83,6 +122,7 @@ void lrt_event_preinit(int cores)
   
   altstacks = lrt_mem_alloc(sizeof(char *) * cores, 8, 0);
 }
+
 void lrt_event_trigger_event(lrt_event_num num,
     enum lrt_event_loc_desc desc,
     lrt_event_loc loc)
@@ -106,3 +146,10 @@ uintptr_t lrt_event_altstack_pop(void)
   LRT_Assert(0); 
 }
 
+void __attribute__((noreturn))
+exception_common(int interrupt)
+{
+   lrt_printf("exception: %d\n",interrupt);
+   while(1)
+     ;
+}

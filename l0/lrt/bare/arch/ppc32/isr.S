@@ -33,37 +33,30 @@
 	.balign 256 		; \
 	_IVPR_ ## interrupt:	; \
 	nop 			; \
-	mtspr	SPRN_SPRG0, r3	     ; \
-	mfctr	r3		     ; \
-	mtspr	SPRN_SPRG1, r3	     ; \
-	lis	r3, int_table@h   ; \
-	ori	r3, r3, int_table@l		 ; \
-	lwz	r3, (IV_ ## interrupt) * 4(r3) ; \
-	mtctr	r3		     ; \
-	mfmsr	r3		     ; \
-	ori	r3, r3, (1 << 13) ; \
-	mtmsr	r3		    ; \
-	bctr			    
+	mflr r3 		; \
+	mtspr SPRN_SPRG0, r3 	; \
+	li  r3, IV_ ## interrupt ;\
+	bl exception_common; \
 
 .section .isr, "ax"
 .balign (1 << 16)
 .globl _vec_start
 _vec_start:	
-	EX_LOOP(critical_input)
-	EX_LOOP(machine_check)
-	EX_LOOP(data_storage) 
-	EX_LOOP(instruction_storage) 
-	EX_LOOP(external) 
-	EX_LOOP(alignment) 
-	EX_LOOP(program) 
-	EX_LOOP(floating_point_unavailable) 
-	EX_LOOP(system_call) 
-	EX_LOOP(auxiliary_processor_unavailable) 
-	EX_LOOP(decrementer) 
-	EX_LOOP(fixed_interval_timer) 
-	EX_LOOP(watchdog_timer) 
-	EX_LOOP(data_tlb_error) 
-	EX_LOOP(instruction_tlb_error) 
-	EX_LOOP(debug) 
+	EX_JUMP(critical_input)
+	EX_JUMP(machine_check)
+	EX_JUMP(data_storage) 
+	EX_JUMP(instruction_storage) 
+	EX_JUMP(external) 
+	EX_JUMP(alignment) 
+	EX_JUMP(program) 
+	EX_JUMP(floating_point_unavailable) 
+	EX_JUMP(system_call) 
+	EX_JUMP(auxiliary_processor_unavailable) 
+	EX_JUMP(decrementer) 
+	EX_JUMP(fixed_interval_timer) 
+	EX_JUMP(watchdog_timer) 
+	EX_JUMP(data_tlb_error) 
+	EX_JUMP(instruction_tlb_error) 
+	EX_JUMP(debug) 
 _vec_end:
 

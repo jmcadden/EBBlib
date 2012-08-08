@@ -1,3 +1,6 @@
+#ifndef SYNC_MISC_H
+#define SYNC_MISC_H
+
 /*
  * Copyright (C) 2011 by Project SESA, Boston University
  *
@@ -19,19 +22,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#include <config.h>
 
-#include <inttypes.h>
-#include <stdbool.h>
+#define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
 
-#include <l0/EBBMgrPrim.h>
-#include <l0/EventMgrPrimImp.h>
-#include <l0/MemMgrPrim.h>
-#include <l0/cobj/CObjEBBRootMultiImp.h>
-#include <lrt/assert.h>
-
-EBBRC
-EventMgrPrimExpInit(void)
-{
-  LRT_Assert(0);
-}
+#endif
