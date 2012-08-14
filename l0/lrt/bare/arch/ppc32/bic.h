@@ -21,6 +21,7 @@
  */
 
 #include <stdint.h>
+#include <l0/lrt/event_loc.h>
 
 #define BIC_NUM_GROUPS (15)
 #define BIC_NUM_IRQS (32)
@@ -39,3 +40,5 @@ void bic_enable_irq(uint8_t group, uint8_t irq,
 void bic_raise_irq(uint8_t group, uint8_t irq);
 void bic_clear_irq(uint8_t group, uint8_t irq);
 void bic_init(void);
+void bic_secondary_init(void);
+unsigned int bic_get_core_noncrit(lrt_event_loc loc);

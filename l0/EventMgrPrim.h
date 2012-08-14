@@ -89,6 +89,9 @@ COBJ_EBBType(EventMgrPrim) {
 
   // this function is called by lrt code to dispatch an interrupt
   EBBRC (*dispatchEvent) (EventMgrPrimRef _self, EventNo eventNo);
+
+  // this function is called by lrt code to dispatch an IRQ
+  EBBRC (*dispatchIRQ) (EventMgrPrimRef _self);
 };
 
 // the ID of the one and only event manager

@@ -27,14 +27,54 @@
 	.section .init.entry, "ax"
 	.balign 8
 _start:
-	// setup MSR
-	mfmsr r21
-	/* diable external interupts*/
-	andi. r21, r21, 0x7fff
-	/* enable fpu & machine check */
-	ori   r21, r21, 0x3000
-	mtmsr r21
-	
+  // clear caches
+	dccci r0, r0
+	iccci r0, r0
+	msync
+
+  // load interrupt vectors	
+	lis	r21, _vec_start@h
+	ori	r21, r21, _vec_start@l
+	mtspr	SPRN_IVPR, r21
+
+	li	r21, 0
+	mtspr	SPRN_IVOR0, r21
+	li	r21, 0x100
+	mtspr	SPRN_IVOR1, r21
+	li	r21, 0x200
+	mtspr	SPRN_IVOR2, r21
+	li	r21, 0x300
+	mtspr	SPRN_IVOR3, r21
+	li	r21, 0x400
+	mtspr	SPRN_IVOR4, r21
+	li	r21, 0x500
+	mtspr	SPRN_IVOR5, r21
+	li	r21, 0x600
+	mtspr	SPRN_IVOR6, r21
+	li	r21, 0x700
+	mtspr	SPRN_IVOR7, r21
+	li	r21, 0x800
+	mtspr	SPRN_IVOR8, r21
+	li	r21, 0x900
+	mtspr	SPRN_IVOR9, r21
+	li	r21, 0xA00
+	mtspr	SPRN_IVOR10, r21
+	li	r21, 0xB00
+	mtspr	SPRN_IVOR11, r21
+	li	r21, 0xC00
+	mtspr	SPRN_IVOR12, r21
+	li	r21, 0xD00
+	mtspr	SPRN_IVOR13, r21
+	li	r21, 0xE00
+	mtspr	SPRN_IVOR14, r21
+	li	r21, 0xF00
+	mtspr	SPRN_IVOR15, r21
+
+  // configure machine state register
+	lis	r21, 0
+	ori	r21, r21, 0x3000
+	mtmsr 	r21
+
 	//set small data areas to 0
 	li	r13, 0
 	li	r2, 0
@@ -44,17 +84,22 @@ _start:
 	ori	r1, r1, _mini_stack@l
 	subi	r1, r1, 112 //ask about this
 
+  // get core number
 	mfspr	r21, SPRN_PIR
 	lis	r22, entry_secondary@h
 	ori	r22, r22, entry_secondary@l
+  
+  // loop secoundary cores 
 1:
 	dcbi	0, r22
 	lwz	r23, 0(r22)
 	cmpw	r23, r21
 	bne	1b
-
-	bl init_mapping
-	bl init
+  // setup paging then call init
+	mr	r20, r3
+	bl 	init_mapping
+	mr	r3, r20
+	bl 	init
 spin:
 	b	spin
   

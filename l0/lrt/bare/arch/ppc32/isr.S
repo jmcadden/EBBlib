@@ -26,7 +26,6 @@
 #define EX_LOOP(interrupt) \
 	.balign 256 		; \
 	_IVPR_ ## interrupt: 	; \
-	nop 			; \
 	b _IVPR_ ## interrupt
 
 #define EX_JUMP(interrupt) \
@@ -38,25 +37,36 @@
 	li  r3, IV_ ## interrupt ;\
 	bl exception_common; \
 
+#define EX_EVENT(interrupt) \
+  .balign 256; \
+	_IVPR_ ## interrupt:	; \
+	li r3, 0x3000  		; \
+	mtmsr r3 		; \
+	mtspr SPRN_SRR1, r3	; \
+	li r3, IV_ ## interrupt ;\
+	bl event_common; \
+	rfi
+
 .section .isr, "ax"
 .balign (1 << 16)
 .globl _vec_start
 _vec_start:	
-	EX_JUMP(critical_input)
-	EX_JUMP(machine_check)
-	EX_JUMP(data_storage) 
-	EX_JUMP(instruction_storage) 
-	EX_JUMP(external) 
-	EX_JUMP(alignment) 
-	EX_JUMP(program) 
-	EX_JUMP(floating_point_unavailable) 
-	EX_JUMP(system_call) 
-	EX_JUMP(auxiliary_processor_unavailable) 
-	EX_JUMP(decrementer) 
-	EX_JUMP(fixed_interval_timer) 
-	EX_JUMP(watchdog_timer) 
-	EX_JUMP(data_tlb_error) 
-	EX_JUMP(instruction_tlb_error) 
-	EX_JUMP(debug) 
+ 	EX_JUMP(critical_input)
+ 	EX_JUMP(machine_check)
+ 	EX_JUMP(data_storage) 
+ 	EX_JUMP(instruction_storage) 
+ 	EX_EVENT(external) 
+ 	EX_JUMP(alignment) 
+ 	EX_JUMP(program) 
+ 	EX_JUMP(floating_point_unavailable) 
+ 	EX_JUMP(system_call) 
+ 	EX_JUMP(auxiliary_processor_unavailable) 
+ 	EX_JUMP(decrementer) 
+ 	EX_JUMP(fixed_interval_timer) 
+ 	EX_JUMP(watchdog_timer) 
+ 	EX_JUMP(data_tlb_error) 
+ 	EX_JUMP(instruction_tlb_error) 
+ 	EX_JUMP(debug)
+//	.fill	(1 << 14), 4, 0x48000000
 _vec_end:
 

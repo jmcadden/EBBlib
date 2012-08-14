@@ -61,27 +61,17 @@ static uintptr_t **altstacks;
 
 void *lrt_event_init(void *myloc)
 { 
-  extern uint8_t _vec_start[];
-  set_ivpr(_vec_start);
-  //IVORS in the order that fixed registers
-  // are set
-  set_spr(SPRN_IVOR0, 0x000);
-  set_spr(SPRN_IVOR1, 0x100);
-  set_spr(SPRN_IVOR2, 0x200);
-  set_spr(SPRN_IVOR3, 0x300);
-  set_spr(SPRN_IVOR4, 0x400);
-  set_spr(SPRN_IVOR5, 0x500);
-  set_spr(SPRN_IVOR6, 0x600);
-  set_spr(SPRN_IVOR7, 0x700);
-  set_spr(SPRN_IVOR8, 0x800);
-  set_spr(SPRN_IVOR9, 0x900);
-  set_spr(SPRN_IVOR10, 0xA00);
-  set_spr(SPRN_IVOR11, 0xB00);
-  set_spr(SPRN_IVOR12, 0xC00);
-  set_spr(SPRN_IVOR13, 0xD00);
-  set_spr(SPRN_IVOR14, 0xE00);
-  set_spr(SPRN_IVOR15, 0xF00);
+  if (lrt_my_event_loc() != 0) {
+    bic_secondary_init();
+  }
+  //disable timers
+  tcr tcr;
+  tcr.val = 0;
+  set_spr(SPRN_TCR, tcr.val);
 
+  tsr tsr;
+  tsr.val = 0;
+  set_spr(SPRN_TSR, tsr.val);
 
 #define STACK_SIZE (1 << 14)
   char *myStack = lrt_mem_alloc(STACK_SIZE, 16, lrt_my_event_loc());
@@ -92,7 +82,7 @@ void *lrt_event_init(void *myloc)
   asm volatile (
 		"mr 1, %[stack];"
 		:
-		: [stack] "r" (&myStack[STACK_SIZE])
+		: [stack] "r" (&myStack[STACK_SIZE-112])
 		: "memory");
 
   extern long entry_secondary;
@@ -108,18 +98,15 @@ void lrt_event_preinit(int cores)
 
   num_loc = cores;
 
-  //disable timers
-  tcr tcr;
-  tcr.val = get_spr(SPRN_TCR);
-  tcr.wie = 0;
-  tcr.die = 0;
-  tcr.fie = 0;
-  set_spr(SPRN_TCR, tcr.val);
-
   //disable and clear all IRQs on BIC
   bic_init();
   bic_disable_and_clear_all();
-  
+  // map ipis
+  // IRQ 0-31 are no mapped to devicies, can be used for IPIs
+  bic_enable_irq(BIC_IPI_GROUP, 0, NONCRIT, 0);
+  bic_enable_irq(BIC_IPI_GROUP, 1, NONCRIT, 1);
+  bic_enable_irq(BIC_IPI_GROUP, 2, NONCRIT, 2);
+  bic_enable_irq(BIC_IPI_GROUP, 3, NONCRIT, 3);
   altstacks = lrt_mem_alloc(sizeof(char *) * cores, 8, 0);
 }
 
@@ -144,6 +131,7 @@ void lrt_event_altstack_push(uintptr_t val)
 uintptr_t lrt_event_altstack_pop(void)
 { 
   LRT_Assert(0); 
+  return 0;
 }
 
 void __attribute__((noreturn))
@@ -152,4 +140,10 @@ exception_common(int interrupt)
    lrt_printf("exception: %d\n",interrupt);
    while(1)
      ;
+}
+
+void
+event_common(int interrupt)
+{
+  COBJ_EBBCALL(theEventMgrPrimId, dispatchIRQ);
 }

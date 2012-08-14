@@ -89,6 +89,8 @@ mailbox_putc(int c)
   return c;
 }
 
+#include <l0/lrt/event.h>
+
 static int
 mailbox_write(uintptr_t cookie, const char *str, int len) 
 {

@@ -35,8 +35,6 @@
 #include <l0/lrt/trans.h>
 #include <lrt/io.h>
 
-FILE *stdout;
-
 static inline void
 clear_bss(void)
 {
@@ -80,6 +78,7 @@ init_mapping(void)
 		);
   t0.epn = 1 << 20; //virtual address 1GB
   t1.rpn = 1 << 20; //physical address 1GB
+  t2.sx = 0;
   asm volatile (
 		"tlbwe %[word0],%[entry],0;"
 		"tlbwe %[word1],%[entry],1;"
@@ -106,17 +105,18 @@ init_mapping(void)
         );
   }
   //this synchronizes, so the shadow TLB gets flushed and our new mappings are picked up
+  // all future accesses will miss the TLB cache and pickup our new mappings
   asm volatile ("isync"); 
 }
 
 void __attribute__((noreturn))
 init(struct fdt *fdt) 
 {
+  // core execute this function sequentially begining with core 0
   if (lrt_my_event_loc() == 0) {
     clear_bss();
     fdt_init(fdt);
     stdout = mailbox_init();
-    printf("Mailbox initialized\n");
     
     int cores = 4;
     lrt_mem_preinit(cores);

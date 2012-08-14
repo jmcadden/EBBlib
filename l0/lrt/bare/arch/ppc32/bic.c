@@ -132,6 +132,15 @@ bic_clear_irq(uint8_t group, uint8_t irq)
   bg_irqctrl->groups[group].status_clr = 1 << (31 - irq);
 }
 
+unsigned int bic_get_core_noncrit(lrt_event_loc loc)
+{
+  return bg_irqctrl->core_non_crit[loc];
+}
+
+static uint64_t paddr;
+static uintptr_t vaddr;
+static uint32_t memsize;
+
 void
 bic_init()
 {
@@ -141,10 +150,18 @@ bic_init()
   struct fdt_node *reg = fdt_get_in_node(bic, "reg");
   LRT_Assert(reg);
 
-  uint64_t paddr = fdt_read_prop_u64(reg, 0);
-  uint32_t memsize = fdt_read_prop_u32(reg, 8);
+  paddr = fdt_read_prop_u64(reg, 0);
+  memsize = fdt_read_prop_u32(reg, 8);
 
   //assume it is aligned
-  bg_irqctrl = tlb_map(paddr, memsize,
-		       TLB_INHIBIT | TLB_GUARDED);
+  vaddr = (uintptr_t)tlb_map(paddr, memsize,
+			     TLB_INHIBIT | TLB_GUARDED);
+  bg_irqctrl = (struct bg_irqctrl *)vaddr;
+}
+
+void
+bic_secondary_init()
+{
+  tlb_map_fixed(paddr, vaddr, memsize,
+		TLB_INHIBIT | TLB_GUARDED);
 }

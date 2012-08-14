@@ -65,6 +65,17 @@ typedef union {
 
 STATIC_ASSERT(sizeof(tcr) == 4, "tcr packing issue");
 
+typedef union {
+  uint32_t val;
+  struct {
+    uint32_t enw :1; //enable next watchdog timer exception
+    uint32_t wis :1; //watchdog timer interrupt status
+    uint32_t wrs :2; //watchdog timer reset status
+    uint32_t dis :1; //decrementer interrupt status
+    uint32_t fis :1; //fixed interval timer interrupt status
+    uint32_t reserved :26;
+  };
+} tsr;
 #define CACHE_LINE_ALIGNMENT 32
 
 #endif

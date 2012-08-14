@@ -238,6 +238,7 @@ extern void lrt_trans_specific_init();
 void
 lrt_trans_init(void)
 {
+  //fail 1:48
   lrt_trans_specific_init();
   LRT_Assert(sysTransValidate());
   // maximum bits in corebv in EBBTransStruct

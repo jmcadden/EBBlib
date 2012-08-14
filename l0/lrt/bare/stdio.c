@@ -20,6 +20,8 @@
  * THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -27,7 +29,7 @@
 
 #include <l0/lrt/bare/stdio.h>
 #include <l0/lrt/bare/string.h>
-
+#include <l0/lrt/event.h>
 FILE *stdout;
 FILE *stdin;
 FILE *stderr;
@@ -115,21 +117,25 @@ prints(const char *str, int width, int precision, unsigned char flags,
   } else {
     pad = ' ';
   }
+  //got here
   if (width > 0) {
     for(ptr = str; (*ptr != '\0') && ((precision == -1) || (len <= precision));
-        ptr++, len++) ;
+        ptr++, len++) 
+      ;
     if(len >= width) {
       width = 0;
     } else {
       width -= len;
     }
   }
+  //got here
   if (!(flags & JUST_LEFT)) {
     for(; width > 0; width--) {
       putc(pad, stream);
       count++;
     }
   }
+  //got here
   for(; precision != 0 && *str != '\0'; str++, precision--) {
     putc(*str, stream);
     if (*str == '\n') {
@@ -339,6 +345,7 @@ vfprintf(FILE *stream, const char *format, va_list ap)
     printit:
       cr[0] = *format;
       cr[1] = '\0';
+      //got here
       count += prints(cr, 0, 1, 0, stream);
     }
   }

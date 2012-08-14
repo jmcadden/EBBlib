@@ -32,6 +32,5 @@ lrt_start(void)
 {
   lrt_mem_init();
   lrt_trans_init();
-
   app_start(); 
 }

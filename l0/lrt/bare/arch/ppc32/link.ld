@@ -56,6 +56,13 @@ SECTIONS
 		ebss = .;
 	}
 	
+	.init ALIGN (16K):
+	{
+		*(.init.entry);
+		*(.init.text);
+		*(.init.data);
+	}
+
 	/DISCARD/ :
 	{
 		*(.eh_frame);
@@ -63,12 +70,6 @@ SECTIONS
 		*(.comment);
 	}
 
-	.init ALIGN (16K):
-	{
-		*(.init.entry);
-		*(.init.text);
-		*(.init.data);
-	}
 	
 	kend = .;	
 }

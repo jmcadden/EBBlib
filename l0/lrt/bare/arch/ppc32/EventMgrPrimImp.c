@@ -39,6 +39,8 @@
 #include <l0/MemMgr.h>
 #include <l0/MemMgrPrim.h>
 #include <l0/lrt/event.h>
+#include <l0/lrt/bare/arch/ppc32/bic.h>
+#include <lrt/string.h>
 
 STATIC_ASSERT(LRT_EVENT_NUM_EVENTS % 8 == 0,
               "num allocatable events isn't divisible by 8");
@@ -168,6 +170,10 @@ EventMgrPrimImp_triggerEvent(EventMgrPrimRef _self, EventNo eventNo,
   }
 
   event_set_bit_bv(&rep->bv, eventNo);
+  
+  if (el != lrt_my_event_loc()) {
+    bic_raise_irq(BIC_IPI_GROUP, el);
+  }
 
   return EBBRC_OK;
 }
@@ -187,16 +193,61 @@ EventMgrPrimImp_dispatchEvent(EventMgrPrimRef _self, EventNo eventNo)
 }
 
 static EBBRC
+EventMgrPrimImp_dispatchIRQ(EventMgrPrimRef _self)
+{ 
+  EventMgrPrimImpRef self = (EventMgrPrimImpRef)_self;
+  // check which group raised an irq
+  unsigned int group = bic_get_core_noncrit(lrt_my_event_loc());
+  int event;
+  if (group & (1 << (31 - BIC_IPI_GROUP))) {
+    // IPI occured
+    // We know the only IRQ that could have fired on our core
+    // in this group is a specific IRQ
+    bic_clear_irq(BIC_IPI_GROUP, lrt_my_event_loc());
+    //FIXME this could run unboundedly
+    while (1) {
+      event = event_get_unset_bit_bv(&self->bv);
+      if (event == -1)
+	break;
+      EventMgrPrimImp_dispatchEvent(_self, event);
+    }
+
+  } else {
+    //NYI
+    LRT_Assert(0);
+  } 
+
+  return EBBRC_OK;
+}
+
+static EBBRC
 EventMgrPrimImp_enableInterrupts(EventMgrPrimRef _self)
 {
   EventMgrPrimImpRef self = (EventMgrPrimImpRef)_self;
   int bit = event_get_unset_bit_bv(&self->bv);
   if (bit != -1) {
     EventMgrPrimImp_dispatchEvent(_self, bit);
-  }
-  //no halt for now
+    return EBBRC_OK;
+ }
+ 
+  msr msr;
+  asm volatile (
+		"mfmsr %[msr]"
+		: [msr] "=r" (msr)
+		);
+  msr.we = 1;
+  msr.ee = 1;
+  asm volatile (
+		"mtmsr %[msr]"
+		:
+		: [msr] "r" (msr)
+		: "r0", "r3", "r4", "r5", "r6", "r7", "r8",
+		  "r9", "r10", "r11", "r12"
+		);
+  /* FIXME: set clobber */
   return EBBRC_OK;
 }
+
 
 CObjInterface(EventMgrPrim) EventMgrPrimImp_ftable = {
   .allocEventNo = EventMgrPrimImp_allocEventNo,
@@ -205,7 +256,8 @@ CObjInterface(EventMgrPrim) EventMgrPrimImp_ftable = {
   .routeIRQ = EventMgrPrimImp_routeIRQ,
   .triggerEvent = EventMgrPrimImp_triggerEvent,
   .enableInterrupts = EventMgrPrimImp_enableInterrupts,
-  .dispatchEvent = EventMgrPrimImp_dispatchEvent
+  .dispatchEvent = EventMgrPrimImp_dispatchEvent,
+  .dispatchIRQ = EventMgrPrimImp_dispatchIRQ
 };
 
 static void
@@ -223,6 +275,16 @@ EventMgrPrimImp_createRep(CObjEBBRootMultiRef root)
   LRT_RCAssert(rc);
 
   EventMgrPrimSetFT(repRef);
+  repRef->theRoot = root;
+  repRef->eventLoc = lrt_my_event_loc();
+  
+  bzero(&repRef->bv, sizeof(repRef->bv));
+
+  rc = EBBPrimMalloc(sizeof(repRef->reps)*lrt_num_event_loc(), &repRef->reps,
+		     EBB_MEM_DEFAULT);
+  LRT_RCAssert(rc);
+
+  bzero(repRef->reps, sizeof(repRef->reps) * lrt_num_event_loc());
 
   // note we get here with the root object locked, and we are assuming tht
   // in searching for/allocating the event_table.  When we parallelize

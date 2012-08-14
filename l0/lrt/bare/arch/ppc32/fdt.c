@@ -87,7 +87,7 @@ fdt_init(struct fdt *oldfdt)
   }
 
   uintptr_t *newfdt = (uintptr_t *)mem_start;
-  for (int i = 0; i < (fdt->size / sizeof(uintptr_t)); i++) {
+  for (int i = 0; i < (oldfdt->size / sizeof(uintptr_t)); i++) {
     newfdt[i] = ((uintptr_t *)oldfdt)[i];
   }
   fdt=(struct fdt*)newfdt;
