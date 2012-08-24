@@ -20,6 +20,7 @@
  * THE SOFTWARE.
  */
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <l0/lrt/event_loc.h>
 
@@ -39,6 +40,9 @@ void bic_enable_irq(uint8_t group, uint8_t irq,
 		    enum bic_int_type type, int8_t loc);
 void bic_raise_irq(uint8_t group, uint8_t irq);
 void bic_clear_irq(uint8_t group, uint8_t irq);
+int bic_get_status(uint8_t group);
+bool bic_targeted_to(uint8_t group, uint8_t irq, 
+		     enum bic_int_type type, int8_t loc);
 void bic_init(void);
 void bic_secondary_init(void);
 unsigned int bic_get_core_noncrit(lrt_event_loc loc);

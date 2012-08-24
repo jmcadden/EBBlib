@@ -21,191 +21,165 @@
  */
 
 #include <config.h>
-
-#include <stdbool.h>
 #include <stdint.h>
 
-#include <l1/App.h>
-#include <lrt/exit.h>
+#include <l0/lrt/types.h>
+#include <l0/cobj/cobj.h>
 #include <lrt/io.h>
+#include <lrt/exit.h>
+#include <l0/lrt/trans.h>
+#include <lrt/assert.h>
+#include <l0/cobj/CObjEBB.h>
+#include <l0/EBBMgrPrim.h>
+#include <l0/cobj/CObjEBBUtils.h>
+#include <l0/cobj/CObjEBBRoot.h>
+#include <l0/cobj/CObjEBBRootShared.h>
+#include <l0/cobj/CObjEBBRootMulti.h>
+#include <l0/cobj/CObjEBBRootMultiImp.h>
+#include <l0/EventMgrPrim.h>
+#include <l0/EventMgrPrimImp.h>
+#include <l0/MemMgr.h>
+#include <l0/MemMgrPrim.h>
+#include <l1/App.h>
+#include <l1/startinfo.h>
+
+#include <l0/lrt/bare/arch/ppc32/bg_tree.h>
+#include <l0/lrt/bare/arch/ppc32/debug.c>
+#include <l0/lrt/event_irq_def.h>
+
+//TODO: move these macros
+/* mystical double-hummer optcode translation */
+#define LFPDX(frt, ra, rb, addr) \
+            asm volatile( ".long %[val]" \
+                : \
+                : [val] "i" ((31<<26)|((frt)<<21)|((ra)<<16)|((rb)<<11)|(462<<1)),  \
+                  "r" (addr) \
+              ); 
+#define STFPDX(frt, ra, rb)     .long (31<<26)|((frt)<<21)|((ra)<<16)|((rb)<<11)|(974<<1)
+
+COBJ_EBBType(TreeObj){
+//  EVENTFUNC(Highwatermark); 
+  EBBRC (*HighWatermark0)(TreeObjRef);
+  EBBRC (*HighWatermark1)(TreeObjRef);
+};
+
+CObject(NullTreeObj) {
+  CObjInterface(TreeObj) *ft;
+};
+
+EBBRC 
+NullTreeObj_HighWatermark0(TreeObjRef _self)
+{
+  lrt_printf("Clearing Channel 0\n");
+  uintptr_t tree;
+  // clear the tree
+  tree = bgtree_get_channel(0);
+  uint32_t status = *(volatile uint32_t *)(tree + 0x40);
+  uint8_t rcv_hdr = status & 0xf;
+  while (rcv_hdr > 0) {
+    *(volatile uint32_t *)(tree + 0x30); //read header
+    register unsigned int addr asm ("r3") = (unsigned int)tree + 0x20;
+    for (int j = 0; j < 256; j += 16) {
+      LFPDX(0,0,3,addr);
+    }
+    rcv_hdr--;
+  }
+  return EBBRC_OK;
+}
+
+EBBRC 
+NullTreeObj_HighWatermark1(TreeObjRef _self)
+{
+  lrt_printf("Clearing Channel 1\n");
+  uintptr_t tree;
+  // clear the tree
+  tree = bgtree_get_channel(1);
+  uint32_t status = *(volatile uint32_t *)(tree + 0x40);
+  uint8_t rcv_hdr = status & 0xf;
+  while (rcv_hdr > 0) {
+    *(volatile uint32_t *)(tree + 0x30); //read header
+    register unsigned int addr asm ("r3") = (unsigned int)tree + 0x20;
+    for (int j = 0; j < 256; j += 16) {
+      LFPDX(0,0,3,addr);
+    }
+    rcv_hdr--;
+  }
+  return EBBRC_OK;
+}
+
+CObjInterface(TreeObj) NullTreeObj_ftable = {
+  .HighWatermark0 = NullTreeObj_HighWatermark0,
+  .HighWatermark1 = NullTreeObj_HighWatermark1
+};
+
+TreeObjId theTreeId;
+EventNo treeHighWaterMark0Event;
+EventNo treeHighWaterMark1Event;
+
+void
+tree_setup(void)
+{
+  EBBRC rc = EBBAllocPrimId((EBBId *)&theTreeId);
+  LRT_RCAssert(rc);
+
+  rc = COBJ_EBBCALL(theEventMgrPrimId, allocEventNo, 
+		    &treeHighWaterMark0Event);
+  rc = COBJ_EBBCALL(theEventMgrPrimId, bindEvent, 
+		    treeHighWaterMark0Event, (EBBId)theTreeId, 
+		    COBJ_FUNCNUM_FROM_TYPE(CObjInterface(TreeObj), HighWatermark0));
+  rc = COBJ_EBBCALL(theEventMgrPrimId, allocEventNo, 
+		    &treeHighWaterMark1Event);
+  rc = COBJ_EBBCALL(theEventMgrPrimId, bindEvent, 
+		    treeHighWaterMark1Event, (EBBId)theTreeId, 
+		    COBJ_FUNCNUM_FROM_TYPE(CObjInterface(TreeObj), HighWatermark1));
+  IRQ HighWatermarkIRQ;
+  bzero(&HighWatermarkIRQ, sizeof(IRQ));
+  HighWatermarkIRQ.isNormalIRQ = true;
+  HighWatermarkIRQ.group = 4;
+  HighWatermarkIRQ.irq = 22;
+  rc = COBJ_EBBCALL(theEventMgrPrimId, routeIRQ, &HighWatermarkIRQ, 
+		    treeHighWaterMark0Event, EVENT_LOC_SINGLE, MyEventLoc());
+  HighWatermarkIRQ.irq = 23;
+  rc = COBJ_EBBCALL(theEventMgrPrimId, routeIRQ, &HighWatermarkIRQ, 
+		    treeHighWaterMark1Event, EVENT_LOC_SINGLE, MyEventLoc());
+}
+
+EBBRC
+NullTree_setup(TreeObjId id)
+{
+  EBBRC rc; 
+  NullTreeObjRef repRef;
+  CObjEBBRootSharedRef rootRef;
+
+  /* alloc a rep */
+  rc = EBBPrimMalloc(sizeof(NullTreeObj), &repRef, EBB_MEM_DEFAULT);
+  LRT_RCAssert(rc);
+  /* alloc and event and bind to our rep */
+  rc = CObjEBBRootSharedCreate(&rootRef, (EBBRepRef)repRef);
+  LRT_RCAssert(rc);
+
+  rc = CObjEBBBind((EBBId)id, rootRef);
+  LRT_RCAssert(rc);
+
+  return EBBRC_OK;
+}
+
+
+/* TreeTst App Object */
 
 CObject(TreeTst) {
   CObjInterface(App) *ft;
 };
 
-/* static void *channel0 = (void *)0xd0000000; */
-/* static void *channel1 = (void *)0xd0002000; */
-
-EBBRC 
-Treetst_start(AppRef _self, int argc, char **argv, 
-		 char **environ)
-{
-  uint32_t rdr0;
-  asm volatile (
-		"mfdcrx %[val], %[dcrn]"
-		: [val] "=r" (rdr0)
-		: [dcrn] "r" (0xc00)
-		);
-  rdr0 = (rdr0 >> 16) & 0xffff;
-
-  uint32_t rdr15;
-  asm volatile (
-		"mfdcrx %[val], %[dcrn]"
-		: [val] "=r" (rdr15)
-		: [dcrn] "r" (0xc07)
-		);
-  rdr15 = rdr15 & 0xffff;
+EBBRC
+Treetst_start(AppRef _self){
+  EBBRC rc;
+  lrt_printf("TreeTst: test started\n");
+  tree_setup();
+  rc = NullTree_setup(theTreeId);
+  LRT_RCAssert(rc);
+  lrt_printf("TreeTst: TreeObj setup. We will now wait..\n");
   
-  if (!((rdr0 & 0x7000) && (rdr0 & 0x0700) &&
-	(rdr15 & 0x7000) && (rdr15 & 0x0700))) {
-    //Leaf Node on some route
-    uint8_t *tree[2] = {(uint8_t *)0xd0000000, (uint8_t *)0xd0002000};
-    //FIXME: This is not event driven, we just sit here and clean the tree
-    while (1) {
-      for (int i = 0; i < 2; i++) {
-	uint32_t status = *(volatile uint32_t *)(tree[i] + 0x40);
-	uint8_t rcv_hdr = status & 0xf;
-	while (rcv_hdr > 0) {
-	  *(volatile uint32_t *)(tree[i] + 0x30); //read header
-	  for (int j = 0; j < 256; j += 16) {
-	    asm volatile (
-			  "lfpdx 0, 0, %[addr]"
-			  :
-			  : [addr] "b" (tree[i] + 0x20)
-			  ); //read payload
-	  }
-	  rcv_hdr--;
-	}
-      }
-    }
-  } else {
-    //Non-leaf Node
-    asm volatile (
-		  "mfdcrx %[val], %[dcrn]"
-		  : [val] "=r" (rdr0)
-		  : [dcrn] "r" (0xc00)
-		  );
-    
-    rdr0 &= ~0x30000;
-    
-    asm volatile (
-		  "mtdcrx %[dcrn], %[val]"
-		  :
-		  : [dcrn] "r" (0xc00),
-		    [val] "r" (rdr0)
-		  );
-    
-    asm volatile (
-		  "mfdcrx %[val], %[dcrn]"
-		  : [val] "=r" (rdr15)
-		  : [dcrn] "r" (0xc07)
-		  );
-    
-    rdr15 &= ~0x3;
-    asm volatile (
-		  "mtdcrx %[dcrn], %[val]"
-		  :
-		  : [dcrn] "r" (0xc07),
-		    [val] "r" (rdr15)
-		  );
-  }
- /*  uint32_t rdr[8]; */
- /*  for (int i = 0; i < 8; i++) { */
- /*    uint32_t dcr; */
- /*    asm volatile ( */
- /* 		  "mfdcrx %[val], %[dcrn]" */
- /* 		  : [val] "=r" (dcr) */
- /* 		  : [dcrn] "r" (0xc00 + i) */
- /* 		  ); */
- /*    rdr[i] = dcr; */
- /*    dcr &= ~0x30003; //turn off local client source/target */
- /*    if (!(dcr & 0x70000000)) { //no source set */
- /*      dcr &= ~0x07000000; //disable targets */
- /*    } */
- /*    if (!(dcr & 0x07000000)) { //no target set */
- /*      dcr &= ~0x70000000; //disable source */
- /*    } */
- /*    if (!(dcr & 0x7000)) { //no source set */
- /*      dcr &= ~0x0700; //disable targets */
- /*    } */
- /*    if (!(dcr & 0x0700)) { //no target set */
- /*      dcr &= ~0x7000; //disable source */
- /*    } */
- /*    asm volatile ( */
- /* 		  "mtdcrx %[dcrn], %[val]" */
- /* 		  :  */
- /* 		  : [dcrn] "r" (0xc00 + i), */
- /* 		    [val] "r" (dcr) */
- /* 		  ); */
- /*  } */
- /*  uint32_t rstat; */
- /* loop: */
- /*  for (int i = 0; i < 1000; i++) { */
- /*    asm volatile ( */
- /* 		  "mfdcrx %[val], %[dcrn]" */
- /* 		  : [val] "=r" (rstat) */
- /* 		  : [dcrn] "r" (0xc13) */
- /* 		  ); */
- /*    if (!(rstat & 0x00ff0000)) { */
- /*      goto loop; */
- /*    } */
- /*  } */
- /*  uint32_t xstat; */
- /*  asm volatile ( */
- /* 		"mfdcrx %[val], %[dcrn]" */
- /* 		: [val] "=r" (xstat) */
- /* 		: [dcrn] "r" (0xc1f) */
- /* 		);   */
-
- /*  uint32_t ch0rstat; */
- /*  asm volatile ( */
- /* 		"mfdcrx %[val], %[dcrn]" */
- /* 		: [val] "=r" (ch0rstat) */
- /* 		: [dcrn] "r" (0xc20) */
- /* 		);   */
- /*  uint32_t ch1rstat; */
- /*  asm volatile ( */
- /* 		"mfdcrx %[val], %[dcrn]" */
- /* 		: [val] "=r" (ch1rstat) */
- /* 		: [dcrn] "r" (0xc28) */
- /* 		);   */
- /*  uint32_t ch2rstat; */
- /*  asm volatile ( */
- /* 		"mfdcrx %[val], %[dcrn]" */
- /* 		: [val] "=r" (ch2rstat) */
- /* 		: [dcrn] "r" (0xc30) */
- /* 		);   */
- /*  uint32_t ch0sstat; */
- /*  asm volatile ( */
- /* 		"mfdcrx %[val], %[dcrn]" */
- /* 		: [val] "=r" (ch0sstat) */
- /* 		: [dcrn] "r" (0xc22) */
- /* 		);   */
- /*  uint32_t ch1sstat; */
- /*  asm volatile ( */
- /* 		"mfdcrx %[val], %[dcrn]" */
- /* 		: [val] "=r" (ch1sstat) */
- /* 		: [dcrn] "r" (0xc2a) */
- /* 		);   */
- /*  uint32_t ch2sstat; */
- /*  asm volatile ( */
- /* 		"mfdcrx %[val], %[dcrn]" */
- /* 		: [val] "=r" (ch2sstat) */
- /* 		: [dcrn] "r" (0xc32) */
- /* 		);   */
- /*  lrt_printf("RSTAT = %x, XSTAT = %x\n", rstat, xstat); */
- /*  lrt_printf("c0r: %x, c0s: %x, c1r: %x, c1s: %x, c2r %x, c2s %x\n", */
- /* 	     ch0rstat, ch0sstat, ch1rstat, ch1sstat, ch2rstat, ch2sstat); */
- /*  for (int i = 0; i < 8; i++) { */
- /*    uint32_t dcr; */
- /*    asm volatile ( */
- /* 		  "mfdcrx %[val], %[dcrn]" */
- /* 		  : [val] "=r" (dcr) */
- /* 		  : [dcrn] "r" (0xc00 + i) */
- /* 		  ); */
- /*    lrt_printf("RDR %d: Orig = %x, New = %x\n", i, rdr[i], dcr); */
- /*  } */
-  lrt_exit(0);
   return EBBRC_OK;
 }
 
@@ -213,5 +187,4 @@ CObjInterface(App) TreeTst_ftable = {
   .start = Treetst_start
 };
 
-APP(TreeTst);
-
+APP_START_ONE(TreeTst);

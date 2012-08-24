@@ -23,10 +23,11 @@
 #include <stdint.h>
 
 #include <arch/powerpc/cpu.h>
-#include <l0/lrt/bare/arch/ppc32/fdt.h>
 #include <arch/powerpc/mmu.h>
 #include <arch/powerpc/regs.h>
 #include <l0/lrt/event.h>
+#include <l0/lrt/bare/arch/ppc32/bg_tree.h>
+#include <l0/lrt/bare/arch/ppc32/debug.h>
 #include <l0/lrt/bare/arch/ppc32/fdt.h>
 #include <l0/lrt/bare/arch/ppc32/lrt_start.h>
 #include <l0/lrt/bare/arch/ppc32/mailbox.h>
@@ -117,6 +118,9 @@ init(struct fdt *fdt)
     clear_bss();
     fdt_init(fdt);
     stdout = mailbox_init();
+    debug_init();
+    bgtree_init();
+    bgtree_debug();
     
     int cores = 4;
     lrt_mem_preinit(cores);
@@ -124,6 +128,8 @@ init(struct fdt *fdt)
     lrt_trans_preinit(cores);
   } else {
     mailbox_secondary_init();
+    debug_secondary_init();
+    bgtree_secondary_init();
   }
    
   lrt_event_init(NULL); //unused parameter

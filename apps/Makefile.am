@@ -17,6 +17,6 @@ include apps/ethtst/Makefile.am
 include apps/eventtiming/Makefile.am
 endif
 if powerpc
-#include apps/treetst/Makefile.am
+include apps/treetst/Makefile.am
 endif
 endif

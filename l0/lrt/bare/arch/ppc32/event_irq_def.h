@@ -23,4 +23,16 @@
 #error "This file must be included from l0/lrt/event_irq_def.h"
 #endif
 
-#include <l0/lrt/bare/arch/event_irq_def.h>
+#include <stdbool.h>
+
+//FIXME: this is bullshit
+struct IRQ_t {
+  bool isNormalIRQ;
+  union {
+    struct {
+      int group;
+      int irq;
+    };
+    int exception;
+  };
+};

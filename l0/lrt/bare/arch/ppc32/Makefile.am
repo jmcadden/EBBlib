@@ -21,8 +21,12 @@
 
 
 l0_lrt_bare_arch_ppc32_sources = \
+	l0/lrt/bare/arch/ppc32/bg_tree.h \
+	l0/lrt/bare/arch/ppc32/bg_tree.c \
 	l0/lrt/bare/arch/ppc32/bic.c \
 	l0/lrt/bare/arch/ppc32/bic.h \
+	l0/lrt/bare/arch/ppc32/debug.c \
+	l0/lrt/bare/arch/ppc32/debug.h \
 	l0/lrt/bare/arch/ppc32/event.c \
 	l0/lrt/bare/arch/ppc32/EventMgrPrimImp.c \
 	l0/lrt/bare/arch/ppc32/fdt.c \

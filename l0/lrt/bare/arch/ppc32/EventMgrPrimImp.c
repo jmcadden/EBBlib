@@ -39,12 +39,14 @@
 #include <l0/MemMgr.h>
 #include <l0/MemMgrPrim.h>
 #include <l0/lrt/event.h>
+#include <l0/lrt/event_irq_def.h>
 #include <l0/lrt/bare/arch/ppc32/bic.h>
 #include <lrt/string.h>
 
 STATIC_ASSERT(LRT_EVENT_NUM_EVENTS % 8 == 0,
               "num allocatable events isn't divisible by 8");
 static uint8_t alloc_table[LRT_EVENT_NUM_EVENTS / 8];
+static EventNo irq_table[BIC_NUM_GROUPS][BIC_NUM_IRQS];
 
 struct event_bvs {
   uint32_t vec[8];
@@ -125,7 +127,10 @@ static EBBRC
 EventMgrPrimImp_routeIRQ(EventMgrPrimRef _self, IRQ *isrc, EventNo eventNo,
                       enum EventLocDesc desc, EventLoc el)
 {
-  LRT_Assert(0);
+  LRT_Assert(desc == EVENT_LOC_SINGLE);
+  LRT_Assert(isrc->isNormalIRQ);
+  irq_table[isrc->group][isrc->irq] = eventNo;
+  bic_enable_irq(isrc->group, isrc->irq, NONCRIT, el);
   return EBBRC_OK;
 }
 
@@ -199,11 +204,11 @@ EventMgrPrimImp_dispatchIRQ(EventMgrPrimRef _self)
   // check which group raised an irq
   unsigned int group = bic_get_core_noncrit(lrt_my_event_loc());
   int event;
+  // check if IPI occured
   if (group & (1 << (31 - BIC_IPI_GROUP))) {
-    // IPI occured
     // We know the only IRQ that could have fired on our core
     // in this group is a specific IRQ
-    bic_clear_irq(BIC_IPI_GROUP, lrt_my_event_loc());
+    bic_clear_irq(BIC_IPI_GROUP, MyEventLoc());
     //FIXME this could run unboundedly
     while (1) {
       event = event_get_unset_bit_bv(&self->bv);
@@ -213,8 +218,17 @@ EventMgrPrimImp_dispatchIRQ(EventMgrPrimRef _self)
     }
 
   } else {
-    //NYI
-    LRT_Assert(0);
+    int group_num = __builtin_clz(group);
+    int status = bic_get_status(group_num);
+    while (status != 0) {
+      int irq_num = __builtin_clz(status);
+      if (bic_targeted_to(group_num, irq_num, NONCRIT, MyEventLoc())) {
+	bic_clear_irq(group_num, irq_num);
+	EventMgrPrimImp_dispatchEvent(_self, irq_table[group_num][irq_num]);
+	return EBBRC_OK;
+      }
+      status &= ~(1 << (31 - irq_num));
+    }
   } 
 
   return EBBRC_OK;

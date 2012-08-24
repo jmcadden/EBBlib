@@ -1,5 +1,8 @@
+#ifndef L0_LRT_BARE_ARCH_PPC32_DEBUG
+#define L0_LRT_BARE_ARCH_PPC32_DEBUG
+
 /*
- * Copyright (C) 2012 by Project SESA, Boston University
+ * Copyright (C) 2011 by Project SESA, Boston University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,8 +22,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef __LRT_EVENT_IRQ_DEF_H__
-#error "This file must be included from l0/lrt/event_irq_def.h"
-#endif
 
-#include <l0/lrt/bare/arch/event_irq_def.h>
+#include <l0/lrt/bare/stdio.h>
+
+void debug_init(void);
+void debug_secondary_init(void);
+int get_debug_status(void);
+void set_debug_val(int val);
+int get_debug_val(void);
+#endif

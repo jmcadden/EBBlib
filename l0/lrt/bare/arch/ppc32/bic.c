@@ -71,12 +71,22 @@ irq_to_target_index(uint8_t irq) {
 
 static inline void
 set_target(uint8_t group, uint8_t irq, uint8_t target) {
-  uint8_t offset = 28 - (irq * 4);
+  uint32_t offset = 28 - ((irq % 8) * 4);
   uint32_t val = 
     bg_irqctrl->groups[group].target_irq[irq_to_target_index(irq)];
   val &= ~(0xf << offset); //mask off the correct bits
   val |= (target & 0xf) << offset; //set the correct bits appropriately
   bg_irqctrl->groups[group].target_irq[irq_to_target_index(irq)] = val;
+}
+
+static inline uint8_t
+get_target(uint8_t group, uint8_t irq) {
+  uint32_t offset = 28 - ((irq % 8) * 4);
+  uint32_t val = 
+    bg_irqctrl->groups[group].target_irq[irq_to_target_index(irq)];
+  val >>= offset;
+  val &= 0xf;
+  return val;
 }
 
 void
@@ -135,6 +145,25 @@ bic_clear_irq(uint8_t group, uint8_t irq)
 unsigned int bic_get_core_noncrit(lrt_event_loc loc)
 {
   return bg_irqctrl->core_non_crit[loc];
+}
+
+int
+bic_get_status(uint8_t group)
+{
+  LRT_Assert(group < BIC_NUM_GROUPS);
+  return bg_irqctrl->groups[group].status;
+}
+
+bool
+bic_targeted_to(uint8_t group, uint8_t irq, 
+		enum bic_int_type type, int8_t loc)
+{
+  uint8_t target = type + 1;
+  if (loc != -1) { //not broadcast
+    target <<= 2;
+    target |= loc;
+  }
+  return get_target(group, irq) == target;
 }
 
 static uint64_t paddr;
