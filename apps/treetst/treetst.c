@@ -70,7 +70,6 @@ CObject(NullTreeObj) {
 EBBRC 
 NullTreeObj_HighWatermark0(TreeObjRef _self)
 {
-  lrt_printf("Clearing Channel 0\n");
   uintptr_t tree;
   // clear the tree
   tree = bgtree_get_channel(0);
@@ -90,7 +89,6 @@ NullTreeObj_HighWatermark0(TreeObjRef _self)
 EBBRC 
 NullTreeObj_HighWatermark1(TreeObjRef _self)
 {
-  lrt_printf("Clearing Channel 1\n");
   uintptr_t tree;
   // clear the tree
   tree = bgtree_get_channel(1);
@@ -154,6 +152,10 @@ NullTree_setup(TreeObjId id)
   /* alloc a rep */
   rc = EBBPrimMalloc(sizeof(NullTreeObj), &repRef, EBB_MEM_DEFAULT);
   LRT_RCAssert(rc);
+
+  //setup the rep
+  repRef->ft = &NullTreeObj_ftable;
+
   /* alloc and event and bind to our rep */
   rc = CObjEBBRootSharedCreate(&rootRef, (EBBRepRef)repRef);
   LRT_RCAssert(rc);

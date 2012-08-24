@@ -223,9 +223,9 @@ EventMgrPrimImp_dispatchIRQ(EventMgrPrimRef _self)
     while (status != 0) {
       int irq_num = __builtin_clz(status);
       if (bic_targeted_to(group_num, irq_num, NONCRIT, MyEventLoc())) {
-	bic_clear_irq(group_num, irq_num);
-	EventMgrPrimImp_dispatchEvent(_self, irq_table[group_num][irq_num]);
-	return EBBRC_OK;
+        EventMgrPrimImp_dispatchEvent(_self, irq_table[group_num][irq_num]);
+        bic_clear_irq(group_num, irq_num);
+        return EBBRC_OK;
       }
       status &= ~(1 << (31 - irq_num));
     }

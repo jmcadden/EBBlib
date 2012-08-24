@@ -40,6 +40,7 @@ FILE *bgtree_init(void);
 void bgtree_secondary_init(void);
 uintptr_t bgtree_get_channel(int c);
 void bgtree_debug(void);
+void bgtree_clear_watermark_irq(int);
 
 #endif
 

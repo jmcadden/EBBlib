@@ -27,6 +27,7 @@
 #include <lrt/io.h>
 #include <l0/lrt/bare/stdio.h>
 #include <l0/lrt/bare/arch/ppc32/bg_tree.h>
+#include <l0/lrt/bare/arch/ppc32/bic.h>
 #include <l0/lrt/bare/arch/ppc32/fdt.h>
 #include <l0/lrt/bare/arch/ppc32/mmu.h>
 #include <lrt/string.h>
@@ -97,9 +98,14 @@ bgtree_init()
     // disable send and recive IRQs
     mtdcrx(dcr_base + 0x45, 0);
     mtdcrx(dcr_base + 0x49, 0);
+
     // clear pending IRQs
     mfdcrx(dcr_base + 0x44);
     mfdcrx(dcr_base + 0x48);
+
+    for (int i = 0; i < 24; i++) {
+      bic_clear_irq(4, i);
+    }
 
     // setup reception watermarks
     // potential bug? We're clearing the other bits
