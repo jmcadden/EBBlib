@@ -127,7 +127,7 @@ bic_enable_irq(uint8_t group, uint8_t irq,
 }
 
 void
-bic_raise_irq(uint8_t group, uint8_t irq)
+bic_raise_irq(int group, int irq)
 {
   LRT_Assert(group < BIC_NUM_GROUPS);
   LRT_Assert(irq < BIC_NUM_IRQS);
@@ -135,11 +135,18 @@ bic_raise_irq(uint8_t group, uint8_t irq)
 }
 
 void
-bic_clear_irq(uint8_t group, uint8_t irq)
+bic_clear_irq(int group, int irq)
 {
   LRT_Assert(group < BIC_NUM_GROUPS);
   LRT_Assert(irq < BIC_NUM_IRQS);
   bg_irqctrl->groups[group].status_clr = 1 << (31 - irq);
+}
+
+void
+bic_clear_group(int group)
+{
+  LRT_Assert(group < BIC_NUM_GROUPS);
+  bg_irqctrl->groups[group].status = 0;
 }
 
 unsigned int bic_get_core_noncrit(lrt_event_loc loc)

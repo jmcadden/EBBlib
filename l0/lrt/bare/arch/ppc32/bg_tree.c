@@ -28,6 +28,7 @@
 #include <l0/lrt/bare/stdio.h>
 #include <l0/lrt/bare/arch/ppc32/bg_tree.h>
 #include <l0/lrt/bare/arch/ppc32/bic.h>
+#include <l0/lrt/bare/arch/ppc32/debug.h>
 #include <l0/lrt/bare/arch/ppc32/fdt.h>
 #include <l0/lrt/bare/arch/ppc32/mmu.h>
 #include <lrt/string.h>
@@ -64,6 +65,21 @@ static inline void mtdcrx(int dcr, int val)
       );
   return ;
 };
+
+void 
+bgtree_clear_inj_exception_flags(void)
+{
+  mfdcrx(dcr_base + 0x48);
+  return;
+}
+
+void 
+bgtree_clear_recv_exception_flags(void)
+{
+  mfdcrx(dcr_base + 0x44);
+  return;
+}
+
 //
 FILE *
 bgtree_init()
@@ -72,7 +88,7 @@ bgtree_init()
   uint32_t size;
   uintptr_t vaddr;
 
-  // lookup tree in fdt
+  // lookup tree address in fdt
   bg_tree = fdt_get("/plb/tree");
   reg = fdt_get_in_node(bg_tree, "reg");
   node = fdt_get_in_node(bg_tree, "nodeid");
@@ -82,39 +98,39 @@ bgtree_init()
   // device control register base address
   dcr_base = fdt_read_prop_u32(dcr_reg, 0);
 
-  // map each tree channel into TLB 
+  // configure each channel of the tree
   for (int chnidx = 0; chnidx < BGP_NUM_CHANNEL; chnidx++)
   {
-    // *8 instead?
     paddr = fdt_read_prop_u64(reg, (chnidx*(12)));
     size = fdt_read_prop_u32(reg, (chnidx*(12)+8));
-    // map into virtual memory
+    // map channel into virtual memory
     paddr_aligned = paddr & ~((uint64_t)size - 1); //align
     vaddr = (uintptr_t)tlb_map(paddr_aligned, size,
         TLB_INHIBIT | TLB_GUARDED);
     channel[chnidx].base_phys = paddr_aligned;
     channel[chnidx].base = vaddr;
     channel[chnidx].size = size;
-    // disable send and recive IRQs
-    mtdcrx(dcr_base + 0x45, 0);
-    mtdcrx(dcr_base + 0x49, 0);
-
-    // clear pending IRQs
-    mfdcrx(dcr_base + 0x44);
-    mfdcrx(dcr_base + 0x48);
-
-    for (int i = 0; i < 24; i++) {
-      bic_clear_irq(4, i);
-    }
-
-    // setup reception watermarks
-    // potential bug? We're clearing the other bits
-    mtdcrx(dcr_base + 0x42, 0x40);
-    mtdcrx(dcr_base + 0x43, 0x40);
-
-    // enable both watermark interrupts
-    mtdcrx(dcr_base + 0x45, 0x3);
   }
+  // disable send and recive IRQs on tree
+  mtdcrx(dcr_base + 0x45, 0); // inject exception enable register
+  mtdcrx(dcr_base + 0x49, 0); // recive exception enable register
+
+  // setup reception watermarks
+  mtdcrx(dcr_base + 0x42, 0x400); /* virtual channel 0 */
+  mtdcrx(dcr_base + 0x43, 0x400); /* virtual channel 1 */
+
+  // clear inject/recive flag registers
+  bgtree_clear_recv_exception_flags();
+  bgtree_clear_inj_exception_flags();
+
+  // clear the BIC of any previous Tree IRQs
+  for (int i = 0; i < 23; i++) { 
+    bic_clear_irq(5, i);
+  } 
+
+  // enable watermark IRQs
+  mtdcrx(dcr_base + 0x45, 0xF); // inject exception enable register
+
   return NULL;
 }
 

@@ -38,8 +38,9 @@ void bic_disable_irq(uint8_t group, uint8_t irq);
 //loc is 0-3 core or -1 for broadcast
 void bic_enable_irq(uint8_t group, uint8_t irq,
 		    enum bic_int_type type, int8_t loc);
-void bic_raise_irq(uint8_t group, uint8_t irq);
-void bic_clear_irq(uint8_t group, uint8_t irq);
+void bic_raise_irq(int group, int irq);
+void bic_clear_irq(int group, int irq);
+void bic_clear_group(int group);
 int bic_get_status(uint8_t group);
 bool bic_targeted_to(uint8_t group, uint8_t irq, 
 		     enum bic_int_type type, int8_t loc);

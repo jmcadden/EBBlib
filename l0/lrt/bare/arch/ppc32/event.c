@@ -97,10 +97,6 @@ void lrt_event_preinit(int cores)
 { 
 
   num_loc = cores;
-
-  //disable and clear all IRQs on BIC
-  bic_init();
-  bic_disable_and_clear_all();
   // map ipis
   // IRQ 0-31 are no mapped to devicies, can be used for IPIs
   bic_enable_irq(BIC_IPI_GROUP, 0, NONCRIT, 0);

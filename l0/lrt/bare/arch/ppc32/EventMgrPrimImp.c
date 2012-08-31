@@ -213,13 +213,14 @@ EventMgrPrimImp_dispatchIRQ(EventMgrPrimRef _self)
     while (1) {
       event = event_get_unset_bit_bv(&self->bv);
       if (event == -1)
-	break;
+        break;
       EventMgrPrimImp_dispatchEvent(_self, event);
     }
-
+    // else, not an IPI 
   } else {
     int group_num = __builtin_clz(group);
     int status = bic_get_status(group_num);
+    // check each IRQ on the bitvector
     while (status != 0) {
       int irq_num = __builtin_clz(status);
       if (bic_targeted_to(group_num, irq_num, NONCRIT, MyEventLoc())) {
@@ -230,7 +231,6 @@ EventMgrPrimImp_dispatchIRQ(EventMgrPrimRef _self)
       status &= ~(1 << (31 - irq_num));
     }
   } 
-
   return EBBRC_OK;
 }
 

@@ -27,6 +27,7 @@
 #include <l0/cobj/cobj.h>
 #include <lrt/io.h>
 #include <lrt/exit.h>
+#include <lrt/string.h>
 #include <l0/lrt/trans.h>
 #include <lrt/assert.h>
 #include <l0/cobj/CObjEBB.h>
@@ -44,7 +45,7 @@
 #include <l1/startinfo.h>
 
 #include <l0/lrt/bare/arch/ppc32/bg_tree.h>
-#include <l0/lrt/bare/arch/ppc32/debug.c>
+#include <l0/lrt/bare/arch/ppc32/debug.h>
 #include <l0/lrt/event_irq_def.h>
 
 //TODO: move these macros
@@ -57,10 +58,13 @@
               ); 
 #define STFPDX(frt, ra, rb)     .long (31<<26)|((frt)<<21)|((ra)<<16)|((rb)<<11)|(974<<1)
 
+/* event definitions */
 COBJ_EBBType(TreeObj){
-//  EVENTFUNC(Highwatermark); 
-  EBBRC (*HighWatermark0)(TreeObjRef);
-  EBBRC (*HighWatermark1)(TreeObjRef);
+  /* tree device IRQs */
+  EBBRC (*InjectionWatermark)(TreeObjRef);
+  EBBRC (*ReceiveWatermark)(TreeObjRef);
+  EBBRC (*ReceiveVC0)(TreeObjRef);
+  EBBRC (*ReceiveVC1)(TreeObjRef);
 };
 
 CObject(NullTreeObj) {
@@ -68,51 +72,44 @@ CObject(NullTreeObj) {
 };
 
 EBBRC 
-NullTreeObj_HighWatermark0(TreeObjRef _self)
+NullTreeObj_Assert(TreeObjRef _self)
 {
-  uintptr_t tree;
-  // clear the tree
-  tree = bgtree_get_channel(0);
-  uint32_t status = *(volatile uint32_t *)(tree + 0x40);
-  uint8_t rcv_hdr = status & 0xf;
-  while (rcv_hdr > 0) {
-    *(volatile uint32_t *)(tree + 0x30); //read header
-    register unsigned int addr asm ("r3") = (unsigned int)tree + 0x20;
-    for (int j = 0; j < 256; j += 16) {
-      LFPDX(0,0,3,addr);
-    }
-    rcv_hdr--;
-  }
-  return EBBRC_OK;
+  LRT_Assert(0); 
 }
 
 EBBRC 
-NullTreeObj_HighWatermark1(TreeObjRef _self)
+NullTreeObj_Receive(TreeObjRef _self)
 {
   uintptr_t tree;
-  // clear the tree
-  tree = bgtree_get_channel(1);
-  uint32_t status = *(volatile uint32_t *)(tree + 0x40);
-  uint8_t rcv_hdr = status & 0xf;
-  while (rcv_hdr > 0) {
-    *(volatile uint32_t *)(tree + 0x30); //read header
-    register unsigned int addr asm ("r3") = (unsigned int)tree + 0x20;
-    for (int j = 0; j < 256; j += 16) {
-      LFPDX(0,0,3,addr);
+  for( int i = 0 ; i < 2; i++){
+    tree = bgtree_get_channel(i);
+    uint32_t status = *(volatile uint32_t *)(tree + 0x40);
+    uint8_t rcv_hdr = status & 0xf;
+    while (rcv_hdr > 0) {
+      *(volatile uint32_t *)(tree + 0x30); //read header
+      register unsigned int addr asm ("r3") = (unsigned int)tree + 0x20;
+      for (int j = 0; j < 256; j += 16) {
+        LFPDX(0,0,3,addr);
+      }
+      rcv_hdr--;
     }
-    rcv_hdr--;
   }
+  bgtree_clear_recv_exception_flags();
   return EBBRC_OK;
 }
 
 CObjInterface(TreeObj) NullTreeObj_ftable = {
-  .HighWatermark0 = NullTreeObj_HighWatermark0,
-  .HighWatermark1 = NullTreeObj_HighWatermark1
+  .InjectionWatermark = NullTreeObj_Assert,
+  .ReceiveWatermark = NullTreeObj_Receive,
+  .ReceiveVC0 = NullTreeObj_Assert,
+  .ReceiveVC1 = NullTreeObj_Assert,
 };
 
 TreeObjId theTreeId;
-EventNo treeHighWaterMark0Event;
-EventNo treeHighWaterMark1Event;
+EventNo TreeInjectEvent; /* injection high/low watermark */
+EventNo TreeReceiveEvent; /* receive high watermark */
+EventNo TreeReceiveEventVC0; /* receive packet interrupt on VC0 */
+EventNo TreeReceiveEventVC1; /* receive packet interrupt on VC1 */
 
 void
 tree_setup(void)
@@ -120,26 +117,53 @@ tree_setup(void)
   EBBRC rc = EBBAllocPrimId((EBBId *)&theTreeId);
   LRT_RCAssert(rc);
 
-  rc = COBJ_EBBCALL(theEventMgrPrimId, allocEventNo, 
-		    &treeHighWaterMark0Event);
+  // alloc the event ids
+  rc = COBJ_EBBCALL(theEventMgrPrimId, allocEventNo, &TreeInjectEvent);
+  rc = COBJ_EBBCALL(theEventMgrPrimId, allocEventNo, &TreeReceiveEvent);
+  rc = COBJ_EBBCALL(theEventMgrPrimId, allocEventNo, &TreeReceiveEventVC0);
+  rc = COBJ_EBBCALL(theEventMgrPrimId, allocEventNo, &TreeReceiveEventVC1);
+  // 
   rc = COBJ_EBBCALL(theEventMgrPrimId, bindEvent, 
-		    treeHighWaterMark0Event, (EBBId)theTreeId, 
-		    COBJ_FUNCNUM_FROM_TYPE(CObjInterface(TreeObj), HighWatermark0));
-  rc = COBJ_EBBCALL(theEventMgrPrimId, allocEventNo, 
-		    &treeHighWaterMark1Event);
+		    TreeInjectEvent, (EBBId)theTreeId, 
+		    COBJ_FUNCNUM_FROM_TYPE(CObjInterface(TreeObj), InjectionWatermark));
+  //
   rc = COBJ_EBBCALL(theEventMgrPrimId, bindEvent, 
-		    treeHighWaterMark1Event, (EBBId)theTreeId, 
-		    COBJ_FUNCNUM_FROM_TYPE(CObjInterface(TreeObj), HighWatermark1));
-  IRQ HighWatermarkIRQ;
-  bzero(&HighWatermarkIRQ, sizeof(IRQ));
-  HighWatermarkIRQ.isNormalIRQ = true;
-  HighWatermarkIRQ.group = 4;
-  HighWatermarkIRQ.irq = 22;
-  rc = COBJ_EBBCALL(theEventMgrPrimId, routeIRQ, &HighWatermarkIRQ, 
-		    treeHighWaterMark0Event, EVENT_LOC_SINGLE, MyEventLoc());
-  HighWatermarkIRQ.irq = 23;
-  rc = COBJ_EBBCALL(theEventMgrPrimId, routeIRQ, &HighWatermarkIRQ, 
-		    treeHighWaterMark1Event, EVENT_LOC_SINGLE, MyEventLoc());
+		    TreeReceiveEvent, (EBBId)theTreeId, 
+		    COBJ_FUNCNUM_FROM_TYPE(CObjInterface(TreeObj), ReceiveWatermark));
+  //
+  rc = COBJ_EBBCALL(theEventMgrPrimId, bindEvent, 
+		    TreeReceiveEventVC0, (EBBId)theTreeId, 
+		    COBJ_FUNCNUM_FROM_TYPE(CObjInterface(TreeObj), ReceiveVC0));
+  //
+  rc = COBJ_EBBCALL(theEventMgrPrimId, bindEvent, 
+		    TreeReceiveEventVC1, (EBBId)theTreeId, 
+		    COBJ_FUNCNUM_FROM_TYPE(CObjInterface(TreeObj), ReceiveVC1));
+
+  // route IRQs
+  IRQ TreeIRQ;
+  bzero(&TreeIRQ, sizeof(IRQ));
+  TreeIRQ.isNormalIRQ = true;
+  TreeIRQ.group = 5;
+
+  TreeIRQ.irq = 20;
+
+  rc = COBJ_EBBCALL(theEventMgrPrimId, routeIRQ, &TreeIRQ, 
+		    TreeReceiveEvent, EVENT_LOC_SINGLE, MyEventLoc());
+
+  TreeIRQ.irq = 21;
+
+  rc = COBJ_EBBCALL(theEventMgrPrimId, routeIRQ, &TreeIRQ, 
+		    TreeReceiveEvent, EVENT_LOC_SINGLE, MyEventLoc());
+
+  TreeIRQ.irq = 22;
+
+  rc = COBJ_EBBCALL(theEventMgrPrimId, routeIRQ, &TreeIRQ, 
+		    TreeReceiveEvent, EVENT_LOC_SINGLE, MyEventLoc());
+
+  TreeIRQ.irq = 23;
+
+  rc = COBJ_EBBCALL(theEventMgrPrimId, routeIRQ, &TreeIRQ, 
+		    TreeReceiveEvent, EVENT_LOC_SINGLE, MyEventLoc());
 }
 
 EBBRC
@@ -156,7 +180,6 @@ NullTree_setup(TreeObjId id)
   //setup the rep
   repRef->ft = &NullTreeObj_ftable;
 
-  /* alloc and event and bind to our rep */
   rc = CObjEBBRootSharedCreate(&rootRef, (EBBRepRef)repRef);
   LRT_RCAssert(rc);
 

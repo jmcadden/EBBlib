@@ -25,14 +25,15 @@
 #include <arch/powerpc/cpu.h>
 #include <arch/powerpc/mmu.h>
 #include <arch/powerpc/regs.h>
-#include <l0/lrt/event.h>
 #include <l0/lrt/bare/arch/ppc32/bg_tree.h>
+#include <l0/lrt/bare/arch/ppc32/bic.h>
 #include <l0/lrt/bare/arch/ppc32/debug.h>
 #include <l0/lrt/bare/arch/ppc32/fdt.h>
 #include <l0/lrt/bare/arch/ppc32/lrt_start.h>
 #include <l0/lrt/bare/arch/ppc32/mailbox.h>
-#include <l0/lrt/mem.h>
 #include <l0/lrt/bare/arch/ppc32/pic.h>
+#include <l0/lrt/event.h>
+#include <l0/lrt/mem.h>
 #include <l0/lrt/trans.h>
 #include <lrt/io.h>
 
@@ -118,6 +119,11 @@ init(struct fdt *fdt)
     clear_bss();
     fdt_init(fdt);
     stdout = mailbox_init();
+
+    //disable and clear all IRQs on BIC
+    bic_init();
+    bic_disable_and_clear_all();
+
     debug_init();
     bgtree_init();
     bgtree_debug();

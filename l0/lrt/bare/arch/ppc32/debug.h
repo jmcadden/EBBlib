@@ -23,11 +23,17 @@
  * THE SOFTWARE.
  */
 
-#include <l0/lrt/bare/stdio.h>
-
 void debug_init(void);
 void debug_secondary_init(void);
 int get_debug_status(void);
 void set_debug_val(int val);
 int get_debug_val(void);
+
+#define BREAKPOINT(COUNT)                          \
+  if(get_debug_status()){ while(get_debug_val() == COUNT); }  \
+
+
+#define BREAK_SET(VAL)                          \
+  if(get_debug_status()){ set_debug_val(VAL); }  \
+
 #endif

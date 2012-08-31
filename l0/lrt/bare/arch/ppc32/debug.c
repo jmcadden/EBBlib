@@ -29,13 +29,6 @@
 #include <lrt/string.h>
 #include <sync/misc.h>
 
-#define BREAKPOINT(COUNT)                          \
-  if(get_debug_status()){ while(get_debug_val() == COUNT); }  \
-
-
-#define BREAK_SET(VAL)                          \
-  if(get_debug_status()){ set_debug_val(VAL); }  \
-
 typedef struct bgp_mailbox {
   volatile uint16_t command;	// comand; upper bit=ack
   uint16_t len;		// length (does not include header)
