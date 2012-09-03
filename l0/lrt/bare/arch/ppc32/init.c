@@ -126,7 +126,6 @@ init(struct fdt *fdt)
 
     debug_init();
     bgtree_init();
-    bgtree_debug();
     
     int cores = 4;
     lrt_mem_preinit(cores);

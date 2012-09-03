@@ -153,14 +153,12 @@ bgtree_secondary_init()
   uint32_t size;
   uintptr_t vaddr;
   for (int chnidx = 0; chnidx < BGP_NUM_CHANNEL; chnidx++){
-  
     paddr = channel[chnidx].base_phys;
     vaddr = channel[chnidx].base;
     size = channel[chnidx].size;
     tlb_map_fixed(paddr, vaddr, size,
         TLB_INHIBIT | TLB_GUARDED);
   }
-
 }
 
 uintptr_t 

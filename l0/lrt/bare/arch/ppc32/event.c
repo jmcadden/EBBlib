@@ -97,12 +97,18 @@ void lrt_event_preinit(int cores)
 { 
 
   num_loc = cores;
-  // map ipis
-  // IRQ 0-31 are no mapped to devicies, can be used for IPIs
+  // IRQ 0-31 are not mapped to devicies, can be used for IPIs
+  // IPIs are enabled early to be using in SMP core bringup
   bic_enable_irq(BIC_IPI_GROUP, 0, NONCRIT, 0);
   bic_enable_irq(BIC_IPI_GROUP, 1, NONCRIT, 1);
   bic_enable_irq(BIC_IPI_GROUP, 2, NONCRIT, 2);
   bic_enable_irq(BIC_IPI_GROUP, 3, NONCRIT, 3);
+  // critical halt IPIs
+  bic_enable_irq(BIC_IPI_GROUP, BIC_CRIT_IPI_BASE+0, CRIT, 0);
+  bic_enable_irq(BIC_IPI_GROUP, BIC_CRIT_IPI_BASE+1, CRIT, 1);
+  bic_enable_irq(BIC_IPI_GROUP, BIC_CRIT_IPI_BASE+2, CRIT, 2);
+  bic_enable_irq(BIC_IPI_GROUP, BIC_CRIT_IPI_BASE+3, CRIT, 3);
+  //
   altstacks = lrt_mem_alloc(sizeof(char *) * cores, 8, 0);
 }
 

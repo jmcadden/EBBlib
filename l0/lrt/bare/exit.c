@@ -1,3 +1,5 @@
+#ifndef __L0_LRT_BARE_EXIT_H__
+#define __L0_LRT_BARE_EXIT_H__
 /*
  * Copyright (C) 2011 by Project SESA, Boston University
  *
@@ -19,15 +21,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#include <config.h>
 
-#include <inttypes.h>
 
-#include <l0/lrt/exit.h>
-#include <lrt/io.h>
+#include <l0/lrt/bare/arch/exit.h>
 
-void lrt_exit(lrt_trans_rc i)
-{
-  lrt_printf("Exit called: %" PRIiPTR"\n", i);
-  while (1) ;
-}
+#endif

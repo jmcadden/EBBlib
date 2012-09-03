@@ -24,13 +24,14 @@
  */
 
 #include <lrt/io.h>
+#include <lrt/exit.h>
 
 #define LRT_Assert(cond)						\
   ({									\
   if (!(cond)) {							\
     if (stdout)								\
       printf("Assertion failed: at %s, line %d\n", __FILE__, __LINE__);	\
-    while(1) ;								\
+   lrt_exit(0); \
   }									\
   })
 #define LRT_WAssert(exp)  \

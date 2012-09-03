@@ -51,7 +51,7 @@
 .balign (1 << 16)
 .globl _vec_start
 _vec_start:	
- 	EX_JUMP(critical_input)
+ 	EX_LOOP(critical_input)
  	EX_JUMP(machine_check)
  	EX_JUMP(data_storage) 
  	EX_JUMP(instruction_storage) 

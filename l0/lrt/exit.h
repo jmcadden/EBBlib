@@ -26,9 +26,7 @@
 extern "C" {
 #endif
 
-#include <l0/lrt/trans.h>
-
-void lrt_exit(lrt_trans_rc rc);
+void lrt_exit(int rc);
 
 #ifdef __cplusplus
 }

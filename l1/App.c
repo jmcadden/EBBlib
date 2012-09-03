@@ -31,6 +31,7 @@
 #include <l0/cobj/CObjEBBRootMultiImp.h>
 #include <l0/EBBMgrPrim.h>
 #include <l0/EventMgrPrimImp.h>
+#include <l0/IOMgrPrimImp.h>
 #include <l0/cobj/CObjEBBUtils.h>
 #include <l1/App.h>
 
@@ -52,6 +53,9 @@ EBB_init_default( )
   //  AND MOST CODE SHOULD BE ON Ebb's
 
   rc = EventMgrPrimImpInit();
+  LRT_RCAssert(rc);
+  
+  rc = IOMgrPrimImpInit();
   LRT_RCAssert(rc);
 }
 

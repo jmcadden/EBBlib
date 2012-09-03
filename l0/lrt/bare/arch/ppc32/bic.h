@@ -27,6 +27,8 @@
 #define BIC_NUM_GROUPS (15)
 #define BIC_NUM_IRQS (32)
 static const uint8_t BIC_IPI_GROUP = 0;
+static const uint8_t BIC_CRIT_IPI_BASE = 4;
+
 enum bic_int_type {
   NONCRIT = 0,
   CRIT = 1,

@@ -68,7 +68,9 @@ HelloWorld_Parallel_start(AppRef _self)
   if (lrt_my_event_loc() == 0) {
     lrt_exit(0);
   }
+  
   return EBBRC_OK;
+
 }
 
 CObjInterface(App) HelloWorld_Parallel_ftable = {

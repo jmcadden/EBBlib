@@ -2,6 +2,7 @@
  * Copyright (C) 2011 by Project SESA, Boston University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
+
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
@@ -19,57 +20,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+#ifndef __L0_LRT_BARE_EXIT_H__
+#error "should be included from l0/lrt/bare/exit.c"
+#endif
+
+#if ARCH_PPC
+#include <l0/lrt/bare/arch/ppc32/exit.h>
+#else
 
 #include <config.h>
-#include <stdint.h>
-
-#include <l0/lrt/types.h>
-#include <l0/cobj/cobj.h>
+#include <inttypes.h>
+#include <l0/lrt/exit.h>
 #include <lrt/io.h>
-#include <lrt/exit.h>
-#include <lrt/string.h>
-#include <l0/lrt/trans.h>
-#include <lrt/assert.h>
-#include <l0/cobj/CObjEBB.h>
-#include <l0/EBBMgrPrim.h>
-#include <l0/cobj/CObjEBBUtils.h>
-#include <l0/cobj/CObjEBBRoot.h>
-#include <l0/cobj/CObjEBBRootShared.h>
-#include <l0/cobj/CObjEBBRootMulti.h>
-#include <l0/cobj/CObjEBBRootMultiImp.h>
-#include <l0/EventMgrPrim.h>
-#include <l0/EventMgrPrimImp.h>
-#include <l0/MemMgr.h>
-#include <l0/MemMgrPrim.h>
-#include <l1/App.h>
-#include <l1/startinfo.h>
 
-#include <l0/lrt/bare/arch/ppc32/bg_tree.h>
-#include <l0/lrt/bare/arch/ppc32/debug.h>
-#include <l0/lrt/event_irq_def.h>
-
-
-
-/* TreeTst App Object */
-
-CObject(TreeTst) {
-  CObjInterface(App) *ft;
-};
-
-EBBRC
-Treetst_start(AppRef _self){
-  lrt_printf("Empty Tree test\n");
-  
-  return EBBRC_OK;
+void lrt_exit(int i)
+{
+  lrt_printf("Exit called: %d\n", i);
+  while (1) ;
 }
 
-CObjInterface(App) TreeTst_ftable = {
-  .start = Treetst_start
-};
-
-APP_START_ONE(TreeTst);
-
-
-
-
-
+#endif
