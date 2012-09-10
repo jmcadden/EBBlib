@@ -1,8 +1,9 @@
+#ifndef L0_LRT_BARE_ARCH_PPC32_EXIT_H
+#define L0_LRT_BARE_ARCH_PPC32_EXIT_H
 /*
  * Copyright (C) 2011 by Project SESA, Boston University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
-
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
@@ -21,44 +22,8 @@
  * THE SOFTWARE.
  */
 
-#include <config.h>
-#include <inttypes.h>
-#include <l0/EventMgrPrim.h>
-#include <l0/lrt/exit.h>
-#include <l0/lrt/bare/arch/ppc32/bg_tree.h>
-#include <l0/lrt/bare/arch/ppc32/bic.h>
-#include <l0/lrt/event_irq_def.h>
-#include <lrt/io.h>
+#include <stdint.h>
 
 void lrt_exit(int i)
-{
-  lrt_printf("Exit called: %d\n", i);
 
-  // disable all other cores 
-  for(EventNo num = NextEventLoc(MyEventLoc());
-      num != MyEventLoc();
-      num = NextEventLoc(num)) {
-      bic_raise_irq(BIC_IPI_GROUP, BIC_CRIT_IPI_BASE+num);
-  }
-
-  // clear incoming packets off the tree
-  uintptr_t tree;
-  while (1)
-  {
-    for( int i = 0 ; i < 2; i++){
-      tree = bgtree_get_channel(i);
-      uint32_t status = *(volatile uint32_t *)(tree + 0x40);
-      uint8_t rcv_hdr = status & 0xf;
-      while (rcv_hdr > 0) {
-        *(volatile uint32_t *)(tree + 0x30); //read header
-        register unsigned int addr asm ("r3") = (unsigned int)tree + 0x20;
-        for (int j = 0; j < 256; j += 16) {
-          LFPDX(0,0,3,addr);
-        }
-        rcv_hdr--;
-      }
-    }
-  };
-
-}
-
+#endif

@@ -71,7 +71,9 @@ _start:
 	mtspr	SPRN_IVOR15, r21
 
   // configure machine state register
-	lis	r21, 0
+  // shift upper 16 bits
+	lis	r21, 0x2
+  // or-in lower 16 bits
 	ori	r21, r21, 0x3000
 	mtmsr 	r21
 

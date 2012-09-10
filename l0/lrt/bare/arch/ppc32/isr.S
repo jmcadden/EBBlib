@@ -40,7 +40,8 @@
 #define EX_EVENT(interrupt) \
   .balign 256; \
 	_IVPR_ ## interrupt:	; \
-	li r3, 0x3000  		; \
+	lis r3, 0x2 		; \
+	ori r3, r3, 0x3000 		; \
 	mtmsr r3 		; \
 	mtspr SPRN_SRR1, r3	; \
 	li r3, IV_ ## interrupt ;\

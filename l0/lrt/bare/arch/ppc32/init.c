@@ -140,4 +140,7 @@ init(struct fdt *fdt)
   lrt_event_init(NULL); //unused parameter
   
   LRT_Assert(0);
+
+  while(1)
+    ;
 }

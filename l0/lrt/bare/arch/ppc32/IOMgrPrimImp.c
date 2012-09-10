@@ -45,22 +45,6 @@
 #include <l0/lrt/bare/arch/ppc32/debug.h>
 #include <l0/lrt/event_irq_def.h>
 
-/* mystical double-hummer optcode translation macros */
-#define LFPDX(frt, ra, rb, addr) \
-  asm volatile( ".long %[val]" \
-      : \
-      : [val] "i" ((31<<26)|((frt)<<21)|((ra)<<16)|((rb)<<11)|(462<<1)),  \
-      "r" (addr) \
-      ); 
-
-#define STFPDX(frt, ra, rb, addr)  \
-  asm volatile( ".long %[val]" \
-      : \
-      : [val] "i" ((31<<26)|((frt)<<21)|((ra)<<16)|((rb)<<11)|(974<<1)) \
-      "r" (addr) \
-      );
-
-
 /* event definitions */
 COBJ_EBBType(TreeObj){
   /* tree device IRQs */
@@ -115,7 +99,7 @@ CObjInterface(TreeObj) NullTreeObj_ftable = {
   .ReceiveVC1 = NullTreeObj_Assert,
 };
 
-void
+EBBRC
 tree_setup(void)
 {
   EBBRC rc = EBBAllocPrimId((EBBId *)&theTreeId);
@@ -168,6 +152,8 @@ tree_setup(void)
 
   rc = COBJ_EBBCALL(theEventMgrPrimId, routeIRQ, &TreeIRQ, 
 		    TreeReceiveEvent, EVENT_LOC_SINGLE, MyEventLoc());
+
+  return EBBRC_OK;
 }
 
 EBBRC
@@ -198,7 +184,8 @@ EBBRC
 IOMgrPrimImpInit(void)
 {
   EBBRC rc;
-  tree_setup();
+  rc = tree_setup();
+  LRT_RCAssert(rc);
   rc = NullTree_setup(theTreeId);
   LRT_RCAssert(rc);
   lrt_printf("Tree initialized\n");

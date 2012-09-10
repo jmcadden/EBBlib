@@ -45,6 +45,7 @@
 #include <l1/startinfo.h>
 
 #include <l0/lrt/bare/arch/ppc32/bg_tree.h>
+#include <l0/lrt/bare/arch/ppc32/link.h>
 #include <l0/lrt/bare/arch/ppc32/debug.h>
 #include <l0/lrt/event_irq_def.h>
 
@@ -58,7 +59,37 @@ CObject(TreeTst) {
 
 EBBRC
 Treetst_start(AppRef _self){
-  lrt_printf("Empty Tree test\n");
+  lrt_printf("Run treetest\n");
+  /*needed values
+   * tree
+   * channel
+   * dest
+   * dest.p2p.pclass
+   * count
+   * send_id
+   * link_protocol
+   * tree_route
+   *
+
+  // let's do a write 
+  struct bglink_hdr_tree lnkhdr __attribute__((aligned(16)));
+  union bgtree_header dest = { raw : 0 }
+  int rc;
+
+  lnkhdr.dst_key = send_id;
+  lnkhdr.lnk_proto = link_protocol;
+
+  dest = tty_route.dest;
+  dest.p2p.pclass = tree_route;
+
+  //link header init
+  lnkhdr.src_key = tree->nodeid;
+  lnkhdr.conn_id = tree->curr_conn++;
+  lnkhdr.total_pkt = 1;  // ((len - 1) / TREE_FRAGPAYLOAD) + 1;
+  lnkhdr.this_pkt = 0;
+  lnkhdr.opt.opt_con.len = count;
+  // transmit
+   * */
   
   return EBBRC_OK;
 }
