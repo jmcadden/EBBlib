@@ -24,7 +24,7 @@
 #include <stdint.h>
 #include <l0/lrt/exit.h>
 
-void lrt_exit(lrt_trans_rc i)
+void lrt_exit(int i)
 {
   exit(i);
 }

@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "EBBKludge.H"
+#include "../EBBKludge.H"
 #include "CacheSimple.H"
  
 CacheObjectDataSimple
@@ -15,7 +15,7 @@ CacheObjectIdSimple :: load()
 EBBRC
 CacheObjectIdSimple :: save(CacheObjectDataSimple data)
 {
-  // TODO: save the db to a backup (we're being removed)
+    // what is the point of this?
     register unsigned int i=0;
     while(i<SAVESPIN) i++;
     return 0;

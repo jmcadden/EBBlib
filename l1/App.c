@@ -54,9 +54,11 @@ EBB_init_default( )
 
   rc = EventMgrPrimImpInit();
   LRT_RCAssert(rc);
-  
+
+#ifdef ARCH_PPC
   rc = IOMgrPrimImpInit();
   LRT_RCAssert(rc);
+#endif
 }
 
 

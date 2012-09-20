@@ -8,7 +8,7 @@ typedef SSAC *SSACId;
 typedef SSAC **SSACId;
 #endif
 
-#define DOTRACE 0
+#define DOTRACE 1
 #undef NOLOCKSNOFLAGSNOCOUNTERS
 
 typedef void *CacheObjectDataSimple;

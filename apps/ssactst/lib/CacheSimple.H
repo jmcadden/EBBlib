@@ -23,7 +23,6 @@ public:
     void invalidate() { _id=(unsigned int)INVALID; }
     CacheObjectDataSimple load();
     EBBRC save(CacheObjectDataSimple data); 
-    // THE HASH FUNCTION
     int index(const int &max) { return _id % max; }
 };
 

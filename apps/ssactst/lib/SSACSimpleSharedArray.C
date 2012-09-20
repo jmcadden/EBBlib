@@ -1,8 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "EBBKludge.H"
+#include "../EBBKludge.H"
 #include "SSACSimpleSharedArray.H"
+#include <l0/lrt/exit.h>
 
 
 void
@@ -107,18 +108,17 @@ SSACSimpleSharedArray :: get( CacheObjectId &id, CacheEntry* &ce,
       ass_printf("\nSSACSimpleSharedArray::get() target id=0x%x is invalid\n"
         , theid.id()));
 
-  // get hash queue location by hashing id w/ max hashqs
   hashq = &(_hashqs[theid.index(_numhashqs)]);
-  // if new hashqueue
+
   if (!hashq->entries) {
     hashq->lock.acquireLock();
     hashq->init(_associativity);
     hashq->lock.releaseLock();
-    //FIXME: return before unnessessary search
   }
 
 again:
   hashq->lock.acquireLock();
+
   ep=hashq->search(theid,_associativity);
 
   if (ep)
@@ -131,7 +131,6 @@ again:
         //  ep->print()
         );
 #endif
-    // If entry is busy, release lock and loop
     if ( ep->flags & CacheEntrySimple::BUSY )
     {
       hashq->lock.releaseLock();
@@ -140,25 +139,26 @@ again:
     }
 
     hashq->count++;
-    if (!hashq->count) hashq->rollover(); //not sure what this is
+    if (!hashq->count) hashq->rollover();
     ep->lastused=hashq->count;
     if ( type == SSAC::GETFORWRITE )
       ep->flags |= CacheEntrySimple::BUSY;
     hashq->lock.releaseLock();
-    ce=ep; // return entry by reference
-    SET_CLSCD(rtn,1); // What's this on about?
+    ce=ep;
+    SET_CLSCD(rtn,1);
     return rtn;
   }
-  else // search missed. We use this opportunity to insert data?
+  else
   {
+    // miss
 #if DOTRACE
     trace( MISC, TR_INFO,
         tr_printf(
           ">>> SSACSimpleSharedArray::get: Miss: id=%d index=%d\n",
           theid.id(),theid.index(_numhashqs)));
 #endif
-    // find least recently used entry in hashqueue
     ep=hashq->lruentry(_associativity);
+
     if (ep)
     {
       if (ep->flags & CacheEntrySimple::DIRTY)
@@ -173,11 +173,9 @@ again:
             //,ep->print()
             );
 #endif
-        // TODO: what is the policy of kicking from caches?
-       // ep->id.save(ep->data);
+        ep->id.save(ep->data);
         ep->flags &= ~CacheEntrySimple::DIRTY;
       }
-      // save data into the cache
       ep->id=theid;
       ep->data=ep->id.load();
     }

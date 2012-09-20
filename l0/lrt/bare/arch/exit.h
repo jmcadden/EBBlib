@@ -25,7 +25,9 @@
 #endif
 
 #if ARCH_PPC
+
 #include <l0/lrt/bare/arch/ppc32/exit.h>
+
 #else
 
 #include <config.h>
