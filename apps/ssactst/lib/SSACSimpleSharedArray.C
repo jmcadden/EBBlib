@@ -1,6 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-
 #include "../EBBKludge.H"
 #include "SSACSimpleSharedArray.H"
 #include <l0/lrt/exit.h>
@@ -19,7 +16,9 @@ SSACSimpleSharedArray :: HashQueues :: init(const int &numentries)
         this ));
 #endif
 
-  entries=new CacheEntrySimple[numentries];
+  EBBRC rc;
+  rc = EBBPrimMalloc(sizeof(CacheEntrySimple)*numentries, &entries, EBB_MEM_DEFAULT);
+  LRT_RCAssert(rc);
 }
 
   CacheEntrySimple *
@@ -81,7 +80,8 @@ SSACSimpleSharedArray :: HashQueues :: HashQueues()
 
 SSACSimpleSharedArray :: HashQueues :: ~HashQueues()
 {
-  if (entries) delete[] entries;
+  //TODO: DELETE 
+ // if (entries) delete[] entries;
 }
 
 SSACSimpleSharedArray :: SSACSimpleSharedArray( const int &numhashqs,
@@ -89,7 +89,9 @@ SSACSimpleSharedArray :: SSACSimpleSharedArray( const int &numhashqs,
 {
   _associativity=associativity;
   _numhashqs = numhashqs;
-  _hashqs = new HashQueues[_numhashqs];
+  EBBRC rc;
+  rc = EBBPrimMalloc(sizeof(HashQueues)*_numhashqs, &_hashqs, EBB_MEM_DEFAULT);
+  LRT_RCAssert(rc);
 }
 
 
@@ -338,7 +340,8 @@ SSACSimpleSharedArray :: ~SSACSimpleSharedArray()
   trace( MISC, TR_INFO,
 	 tr_printf("**** ~SSACSimpleSharedArray\n"));
 #endif
-  delete[] _hashqs;
+  // TODO Deleted hashq
+  //delete[] _hashqs;
 }
 
 EBBRC
@@ -355,10 +358,10 @@ SSACSimpleSharedArray :: snapshot()
     if (hashq->entries)
       for ( j=0; j<_associativity; j++)
       {
-        tr_printf("%d:%d:%ld:%p:",j,
+        tr_printf("%d:%d:%ld:%lx:",j,
             hashq->entries[j].id.id(),
             hashq->entries[j].lastused,
-            hashq->entries[j].data);
+            (long unsigned int)hashq->entries[j].data);
         flags=(hashq->entries[j]).flags;
         if (flags & CacheEntrySimple::BUSY)
           printf("B|");

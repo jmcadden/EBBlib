@@ -1,18 +1,23 @@
+#include "../EBBKludge.H"
 #include "SSACSimplePartitionedArray.H"
+#include <l0/lrt/exit.h>
+/*
 #include <tornado/TAssert.H>
-   
+ */  
 void
 SSACSimplePartitionedArray :: HashQueues :: init(const int &numentries)
 {
     tassert((!entries),
 	  ass_printf("\nSSACSimplePartitionedArray::HashQueues:initq:entries!=0\n"));
 
+    /*
     trace( MISC, TR_INFO,
 	   tr_printf(
 	       ">>> SSACSimplePartitionedArray::HashQueues::init: on que=%lx\n",
 	       this ));
-    
-    entries=new CacheEntrySimple[numentries];
+    // TODO: EBBPrimMalloc
+    //entries=new CacheEntrySimple[numentries];
+*/
 }
 
 CacheEntrySimple *
@@ -41,21 +46,18 @@ SSACSimplePartitionedArray :: HashQueues :: lruentry(const int &numentries)
     
     while (i<numentries)
     {
-#ifndef NOLOCKSNOFLAGSNOCOUNTERS	    
-	if ( !( entries[i].flags & CacheEntrySimple::BUSY ) )
-#endif
+	if ( !( entries[i].flags & CacheEntrySimple::BUSY ) ){
 	    if (!ep)
 	    {
 		ep=&(entries[i]);
 		if (!ep->id.valid())
 		    break;
 	    }
-#ifndef NOLOCKSNOFLAGSNOCOUNTERS
 	    else
 		if ( entries[i].lastused < ep->lastused )
 		    ep=&(entries[i]);
-#endif
-	i++;
+        }   	
+      i++;
     }
     return ep;
 }
@@ -69,15 +71,14 @@ SSACSimplePartitionedArray :: HashQueues :: rollover()
 
 SSACSimplePartitionedArray :: HashQueues :: HashQueues()
 {
-#ifndef NOLOCKSNOFLAGSNOCOUNTERS
     count=0;
-#endif
     entries=0;
 }
 
 SSACSimplePartitionedArray :: HashQueues :: ~HashQueues()
 {
-    if (entries) delete[] entries;
+  // TODO: delete!
+  //  if (entries) delete[] entries;
 }
   
 SSACSimplePartitionedArray :: SSACSimplePartitionedArray( const int &numhashqs,
@@ -86,13 +87,16 @@ SSACSimplePartitionedArray :: SSACSimplePartitionedArray( const int &numhashqs,
     _associativity=associativity;
     _numhashqs = numhashqs;
 
+    // TODO: add MYVP to 
     if (MYVP < _numhashqs % NUMPROC)
     {
-	_hashqs = new HashQueues[_numhashqs/NUMPROC + 1];
+      //TODO: Malloc
+      //	_hashqs = new HashQueues[_numhashqs/NUMPROC + 1];
     }
     else
     {
-	_hashqs = new HashQueues[_numhashqs/NUMPROC];
+      //TODO: Malloc
+      //	_hashqs = new HashQueues[_numhashqs/NUMPROC];
     }
 }
 
@@ -112,11 +116,11 @@ SSACSimplePartitionedArray :: partition(const int &index, int &vp, int &offset)
     }
 }
 
-TornStatus 
+EBBRC 
 SSACSimplePartitionedArray :: get( CacheObjectId &id, CacheEntry* &ce,
 			      const gettype &type )
 {
-    TornStatus rtn=0;
+    EBBRC rtn=0;
        
     CacheObjectIdSimple& theid=((CacheObjectIdSimple &)id);    
     register struct HashQueues *hashq;
@@ -134,17 +138,17 @@ SSACSimplePartitionedArray :: get( CacheObjectId &id, CacheEntry* &ce,
 
     if (vp!=MYVP)
     {
-#ifdef FUNCTIONSHIP
-	rtn=RFUNC3(vp,ref(),SSAC::get,id,ce,type);
-	return rtn;
-#else
+      // TODO: ebbcalls
+      // line below used to avoid uninitilize warnings
+	hashq = &(_hashqs[index]);
+      /*
 	SSACSimplePartitionedArray *rep=(SSACSimplePartitionedArray *)
 	    ((SSACSimplePartitionedMH *)MYMHO)->findRepOn(vp);
 	if (!rep)
 	    rep=(SSACSimplePartitionedArray *)
 		(((SSACSimplePartitionedMH *)MYMHO)->createRepOn(vp));
 	hashq = &(rep->_hashqs[index]);
-#endif
+      */
     }
     else
     {
@@ -153,19 +157,13 @@ SSACSimplePartitionedArray :: get( CacheObjectId &id, CacheEntry* &ce,
     
     
     if (!hashq->entries) {
-#ifndef NOLOCKSNOFLAGSNOCOUNTERS
 	hashq->lock.acquireLock();
-#endif
 	hashq->init(_associativity);
-#ifndef NOLOCKSNOFLAGSNOCOUNTERS
 	hashq->lock.releaseLock();
-#endif
     }
 
-#ifndef NOLOCKSNOFLAGSNOCOUNTERS    
  again:    
     hashq->lock.acquireLock();
-#endif    
 
     ep=hashq->search(theid,_associativity);
 
@@ -175,7 +173,7 @@ SSACSimplePartitionedArray :: get( CacheObjectId &id, CacheEntry* &ce,
 	trace( MISC, TR_INFO,
 	       tr_printf(
 	   ">>> SSACSimplePartitionedArray::get: Hit: id=%d index=%d ep=%llx:\n",
-		   theid.id(), theid.index(_numhashqs),ep );
+		   theid.id(), theid.index(_numhashqs),(long long int)ep );
 	       ep->print()
 	    );
 #ifndef NOLOCKSNOFLAGSNOCOUNTERS
@@ -237,26 +235,22 @@ SSACSimplePartitionedArray :: get( CacheObjectId &id, CacheEntry* &ce,
 		    ">>> SSACSimplePartitionedArray::get: Miss:*NOFREE ENTRIES*\n"
 		       ));
 	    SET_CLSCD(rtn,0);
-#ifndef NOLOCKSNOFLAGSNOCOUNTERS
 	    hashq->lock.releaseLock();
-#endif
 	    return rtn;
 	}
-#ifndef NOLOCKSNOFLAGSNOCOUNTERS
 	hashq->count++;
 	if (!hashq->count) hashq->rollover();
 	ep->lastused=hashq->count;
 	if ( type == SSAC::GETFORWRITE )
 	    ep->flags |= CacheEntrySimple::BUSY;
 	hashq->lock.releaseLock();
-#endif 
 	ce=ep;
 	SET_CLSCD(rtn,1);
 	return rtn;
     }
 }
 
-TornStatus
+EBBRC
 SSACSimplePartitionedArray :: putback( CacheEntry* &ce, const putflag &flag )
 {
 
@@ -269,16 +263,15 @@ SSACSimplePartitionedArray :: putback( CacheEntry* &ce, const putflag &flag )
 
     if (vp!=MYVP)
     {
-#ifdef FUNCTIONSHIP
-	rtn=RFUNC3(vp,ref(),SSAC::get,id,ce,type);
-	return rtn;
-#else
+      //TODO: EBBCALL here
+      /*
 	SSACSimplePartitionedArray *rep=(SSACSimplePartitionedArray *)
 	    ((SSACSimplePartitionedMH *)MYMHO)->findRepOn(vp);
 	tassert(rep, ass_printf("\n **** ERROR: putback:  could not findRepOn %d\n",
 				vp));
-	hashq = &(rep->_hashqs[index]);
-#endif
+        hashq = &(rep->_hashqs[index]);
+    
+      */
     }
     else
     {
@@ -292,18 +285,14 @@ SSACSimplePartitionedArray :: putback( CacheEntry* &ce, const putflag &flag )
 	 ass_printf("\n\nSSACSimplePartitionedArray::putback: bad queue entry:\n");
 	    entry->print());
     
-#ifndef NOLOCKSNOFLAGSNOCOUNTERS
     hashq->lock.acquireLock();
-#endif
     if (flag == KEEP)
     {
 	trace( MISC, TR_INFO,
 	       tr_printf(">>> SSACSimplePartitionedArray::putback: KEEP entry:");
 	       entry->print()
 	    );
-#ifndef NOLOCKSNOFLAGSNOCOUNTERS
     	entry->lastused=hashq->count;
-#endif
     }
     else
     {
@@ -311,19 +300,15 @@ SSACSimplePartitionedArray :: putback( CacheEntry* &ce, const putflag &flag )
 	     tr_printf(">>> SSACSimplePartitionedArray::putback: DISCARD entry:");
 	       entry->print()
 	    );
-#ifndef NOLOCKSNOFLAGSNOCOUNTERS
 	entry->lastused=0;
-#endif
     }
-#ifndef NOLOCKSNOFLAGSNOCOUNTERS
     entry->flags &= ~CacheEntrySimple::BUSY;
     hashq->lock.releaseLock();
-#endif
     entry->wakeup();
     return 0;
 }
 
-TornStatus
+EBBRC
 SSACSimplePartitionedArray :: flush()
 {
     register struct HashQueues *hashq;
@@ -334,14 +319,11 @@ SSACSimplePartitionedArray :: flush()
     {
 	hashq = &(_hashqs[i]);
 	if (!hashq->entries) continue;
-#ifndef NOLOCKSNOFLAGSNOCOUNTERS
     again:	
 	hashq->lock.acquireLock();
-#endif
 	for ( register int j=0; j<_associativity; j++ )
 	{
 	    ce=&(hashq->entries[j]);
-#ifndef NOLOCKSNOFLAGSNOCOUNTERS
 	    if ( !(ce->flags & CacheEntrySimple::BUSY)
                && (ce->id.valid())	    
 		 && ( ce->flags & CacheEntrySimple::DIRTY ))
@@ -360,23 +342,22 @@ SSACSimplePartitionedArray :: flush()
 		ce->wakeup();
 		goto again;
 	    }
-#endif
 	}
-#ifndef NOLOCKSNOFLAGSNOCOUNTERS
 	hashq->lock.releaseLock();
-#endif
     }
     return 0;
 }
 
 SSACSimplePartitionedArray :: ~SSACSimplePartitionedArray()
 {
+  /*
     trace( MISC, TR_INFO,
 	  tr_printf("**** ~SSACSimplePartitionedArray ref=%lx\n",_ref));
     delete[] _hashqs; 
+  */
 }
 
-TornStatus
+EBBRC
 SSACSimplePartitionedArray :: snapshot()
 {
     struct HashQueues *hashq;
@@ -391,28 +372,27 @@ SSACSimplePartitionedArray :: snapshot()
 	{
 	    numqsonvp++;
 	}
+        //EBBCALLS
+        /*
 	rep=(SSACSimplePartitionedArray *)
 	    ((SSACSimplePartitionedMH *)MYMHO)->findRepOn(vp);
-	tassert(rep, ass_printf("\n **** ERROR: snapshot:  could not findRepOn %d\n",
+            tassert(rep, ass_printf("\n **** ERROR: snapshot:  could not findRepOn %d\n",
 				vp));
+	*/
 	tr_printf("Hash Queues on vp=%d\n",vp);
 	for (i=0; i<numqsonvp; i++)
 	{
 	    hashq = &(rep->_hashqs[i]);
-#ifndef NOLOCKSNOFLAGSNOCOUNTERS
+            rep = NULL;
 	    hashq->lock.acquireLock();
-	    tr_printf("_hashq[%d].count=%U\n_hashqs[%d].entries: ",index,hashq->count,index);
-#endif
+	    tr_printf("_hashq[%d].count=%lu\n_hashqs[%d].entries: ",index,hashq->count,index);
 	    if (hashq->entries)
 		for ( j=0; j<_associativity; j++)
 		{
-		    tr_printf("%d:%d:%U:%lx:",j,
+		    tr_printf("%d:%d:%lu:%lx:",j,
 			      hashq->entries[j].id.id(),
-#ifndef NOLOCKSNOFLAGSNOCOUNTERS
 			      hashq->entries[j].lastused,
-#endif
-			      hashq->entries[j].data);
-#ifndef NOLOCKSNOFLAGSNOCOUNTERS
+			      (long unsigned int)hashq->entries[j].data);
 		    flags=(hashq->entries[j]).flags;
 		    if (flags & CacheEntrySimple::BUSY)
 			printf("B|");
@@ -420,14 +400,11 @@ SSACSimplePartitionedArray :: snapshot()
 		    if (flags & CacheEntrySimple::DIRTY)
 			printf("D ");
 		    else printf("C ");
-#endif
 		}
 	    else
 		tr_printf("NULL");
 	    tr_printf("\n");
-#ifndef NOLOCKSNOFLAGSNOCOUNTERS
 	    hashq->lock.releaseLock();
-#endif
 	    index++;
 	}
     }

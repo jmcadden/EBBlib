@@ -40,6 +40,7 @@
 
 #include <io/lrt/ethlib.h>
 #include <strings.h>
+#include <l0/lrt/event_irq.h>
 #include <l0/lrt/event_irq_def.h>
 
 #define VERBOSE_PR(...) ( lrt_printf(__VA_ARGS__) )

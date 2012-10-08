@@ -8,10 +8,10 @@ include apps/helloworldcpp/Makefile.am
 include apps/intercept/Makefile.am
 include apps/msgtst/Makefile.am
 include apps/primalloctst/Makefile.am
+include apps/ssactst/Makefile.am
 
 if LRT_ULNX
 include apps/ethtst/Makefile.am
-include apps/ssactst/Makefile.am
 endif
 
 if LRT_BARE

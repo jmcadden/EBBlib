@@ -34,7 +34,6 @@ class SSACSimpleSharedArray : public SSAC {
   void * operator new(size_t size);
   void operator delete(void * p, size_t size);
 #endif
-
   static EBBRC Create( SSACId &id, const int &numhashqs,
 		       const int &associativity=DEFAULT_ASSOCIATIVITY);
   virtual EBBRC get( CacheObjectId &id, CacheEntry* &ce,

@@ -4,17 +4,16 @@
 // this is tornado speak for setting the class code, we should strip this out everywhere
 // after we decide what we want to do with errors with EBBLIB
 #define SET_CLSCD(A,B) 
+#define TRACE lrt_printf
 
-#ifndef EBBLIB
-#define TRACE(fmt, ...)	fprintf(stderr, "%s: " fmt "\n", __func__, ##__VA_ARGS__)
-
-#define MISC 			1
-#define TR_INFO 	1
-
-typedef int EBBRC;
-#else 
-#define TRACE(fmt, ...)	lrt_printf("%s: " fmt "\n", __func__, ##__VA_ARGS__)
+#if 0
+#define LNX_TRACE(fmt, ...)	lrt_printf(stderr, "%s: " fmt "\n", __func__, ##__VA_ARGS__)
 #endif
+
+#define MISC 		1
+#define TR_INFO 	1
+#define MYVP            0
+#define NUMPROC         1
 
 #define tassert(EX,STMT)			\
   if (!(EX)) {					\
@@ -33,12 +32,8 @@ typedef int EBBRC;
 #define tr_printf TRACE
 
 #ifndef EBBLIB
-class CPlusEBB {
-protected:
-};
 
 #define DREF(id) id
-#define EBBRC_OK 0 
 
 #else
 #include <config.h>

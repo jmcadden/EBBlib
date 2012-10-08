@@ -57,12 +57,14 @@ uintptr_t
 lrt_startinfo_addr()
 {
   lrt_printf("%s: NYI", __func__);
-  LRT_Assert(0);
+  while(1)
+    ;
 }
 
 intptr_t
 lrt_startinfo_size()
 {
   lrt_printf("%s: NYI", __func__);
-  LRT_Assert(0);
+  while(1)
+    ;
 }

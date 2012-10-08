@@ -1,6 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-
 #include "../EBBKludge.H"
 #include "CacheSimple.H"
  
@@ -21,6 +18,26 @@ CacheObjectIdSimple :: save(CacheObjectDataSimple data)
     return 0;
 }
  
+#ifdef EBBLIB
+void *
+CacheObjectIdSimple::operator new(size_t size)
+{
+  void *val;
+  EBBRC rc;
+  rc = EBBPrimMalloc(size, &val, EBB_MEM_DEFAULT);
+  LRT_RCAssert(rc);
+  return val;
+}
+
+void
+CacheObjectIdSimple::operator delete(void * p, size_t size)
+{
+  // NYI
+  LRT_RCAssert(0);
+}
+#endif
+// ---
+
 CacheEntrySimple :: CacheEntrySimple()
 {
     flags=ZERO;
@@ -57,3 +74,22 @@ CacheEntrySimple :: print()
     if (flags & DIRTY) printf("DIRTY"); else printf("CLEAN ");
     printf("\n\tlastused=%ld\n\tdata=%p\n",lastused,data);
 }
+
+#ifdef EBBLIB
+void *
+CacheEntrySimple::operator new(size_t size)
+{
+  void *val;
+  EBBRC rc;
+  rc = EBBPrimMalloc(size, &val, EBB_MEM_DEFAULT);
+  LRT_RCAssert(rc);
+  return val;
+}
+
+void
+CacheEntrySimple::operator delete(void * p, size_t size)
+{
+  // NYI
+  LRT_RCAssert(0);
+}
+#endif
