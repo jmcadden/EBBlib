@@ -1,5 +1,5 @@
-#ifndef SYNC_ATOMIC_AMD64_H
-#define SYNC_ATOMIC_AMD64_H
+#ifndef ATOMIC_AMD64_H
+#define ATOMIC_AMD64_H
 
 /*
  * Copyright (C) 2011 by Project SESA, Boston University
@@ -23,6 +23,17 @@
  * THE SOFTWARE.
  */
 
+#define atomic_fetch_and_add            __sync_fetch_and_add
+#define atomic_fetch_and_or             __sync_fetch_and_or
+#define atomic_fetch_and_and            __sync_fetch_and_and
+#define atomic_add_and_fetch            __sync_add_and_fetch
+#define atomic_sub_and_fetch            __sync_sub_and_fetch
+#define atomic_or_and_fetch             __sync_or_and_fetch
+#define atomic_and_and_fetch            __sync_and_and_fetch
+#define atomic_bool_compare_and_swap    __sync_bool_compare_and_swap
+#define atomic_synchronize              __sync_synchronize
+
+#if 0
 inline uint32_t 
 atomic_fetch_and_add (volatile uint32_t *addr, uint32_t val)
 {
@@ -66,7 +77,6 @@ atomic_and_and_fetch (volatile uint32_t *addr, uint32_t val)
   return __sync_and_and_fetch(addr, val);
 }
 
-
 inline uint32_t 
 atomic_bool_compare_and_swap (volatile uint32_t *addr, 
     uint32_t oldval, uint32_t newval)
@@ -74,10 +84,11 @@ atomic_bool_compare_and_swap (volatile uint32_t *addr,
   return __sync_bool_compare_and_swap(addr, oldval, newval);
 }
 
-inline uint32_t 
+inline void 
 atomic_synchronize (void)
 {
-  __sync_syncronize();
+  __sync_synchronize();
 }
+#endif
 
 #endif

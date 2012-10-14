@@ -3,6 +3,7 @@ arch_amd64_sources = \
 	arch/amd64/apic.h \
 	arch/amd64/args.h \
 	arch/amd64/asm.h \
+	arch/amd64/atomic.h \
 	arch/amd64/cpu.h \
 	arch/amd64/fpr.h \
 	arch/amd64/idt.h \

@@ -1,5 +1,5 @@
-#ifndef SYNC_ATOMIC_H
-#define SYNC_ATOMIC_H
+#ifndef ATOMIC_H
+#define ATOMIC_H
 
 /*
  * Copyright (C) 2011 by Project SESA, Boston University
@@ -74,7 +74,6 @@ previous instructions and then to discard instructions (which may have begun
 execution) following the isync. After the isync is executed, the following
 instructions then begin execution. 
 
-#endif 
 
 /* These builtins perform the operation suggested by the name, and returns the
  * value that had previously been in memory. */
@@ -84,18 +83,28 @@ inline uint32_t atomic_fetch_and_and (volatile uint32_t *addr, uint32_t val);
 
 /* These builtins perform the operation suggested by the name, and return
  * the new value. */
-inline uint32_t atomic_add_and_fetch (volatile uint32_t *addr, uint32_t value);
-inline uint32_t atomic_sub_and_fetch (volatile uint32_t *addr, uint32_t value);
-inline uint32_t atomic_or_and_fetch  (volatile uint32_t *addr, uint32_t value);
-inline uint32_t atomic_and_and_fetch (volatile uint32_t *addr, uint32_t value);
+inline uint32_t atomic_add_and_fetch (volatile uint32_t *addr, uint32_t val);
+inline uint32_t atomic_sub_and_fetch (volatile uint32_t *addr, uint32_t val);
+inline uint32_t atomic_or_and_fetch  (volatile uint32_t *addr, uint32_t val);
+inline uint32_t atomic_and_and_fetch (volatile uint32_t *addr, uint32_t val);
 
 /* These builtins perform an atomic compare and swap. That is, if the current
  * value of *ptr is oldval, then write newval into *ptr.  The “bool” version
  * returns true if the comparison is successful and newval was written. The
  * “val” version returns the contents of *ptr before the operation.  */
-inline uint32_t atomic_bool_compare_and_swap volatile uint32_t *addr, uint32_t oldval, uint32_t newval);
+inline uint32_t atomic_bool_compare_and_swap (volatile uint32_t *addr, uint32_t oldval, uint32_t newval);
 
 /* This builtin issues a full memory barrier. */
-inline uint32_t atomic_synchronize (void)
+inline void atomic_synchronize (void);
+
+#endif 
+
+#ifdef ARCH_AMD64
+#include <arch/amd64/atomic.h>
+#endif
+
+#ifdef ARCH_PPC
+#include <arch/powerpc/atomic.h>
+#endif
 
 #endif

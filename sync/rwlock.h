@@ -24,8 +24,8 @@
  */
 
 #include <stdint.h>
-
 #include <arch/cpu.h>
+#include <arch/atomic.h>
 
 #define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
 
@@ -44,7 +44,7 @@ static inline void
 rwlock_init(rwlock *l)
 {
   l->val = 0;
-  __sync_synchronize();
+  atomic_synchronize();
 }
 
 static inline void
@@ -55,7 +55,7 @@ rwlock_wrlock(rwlock *l)
   temp.users = 1;
 
   //Atomically acquire a ticket and increment the count
-  unsigned me = __sync_fetch_and_add(&l->val, temp.val);
+  unsigned me = atomic_fetch_and_add(&l->val, temp.val);
 
   temp.val = me;
   uint8_t val = temp.users;
@@ -71,7 +71,7 @@ rwlock_wrunlock(rwlock *l)
   rwlock temp;
   temp.val = ACCESS_ONCE(l->val);
 
-  __sync_synchronize();
+  atomic_synchronize();
 
   temp.write++;
   temp.read++;
@@ -89,7 +89,7 @@ rwlock_rdlock(rwlock *l)
   temp.users = 1;
 
   //Atomically acquire a ticket and increment the count
-  unsigned me = __sync_fetch_and_add(&l->val, temp.val);
+  unsigned me = atomic_fetch_and_add(&l->val, temp.val);
 
   temp.val = me;
   uint8_t val = temp.users;
@@ -107,7 +107,7 @@ rwlock_rdunlock(rwlock *l)
 {
   //we increment the write queue so if the next user is a writer,
   //they get through once all readers unlock
-  __sync_add_and_fetch(&l->write, 1);
+  atomic_add_and_fetch(&l->write, 1);
 }
 
 #endif

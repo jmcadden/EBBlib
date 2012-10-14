@@ -37,6 +37,7 @@ extern "C" {
 #include <l0/MemMgr.h>
 #include <l0/MemMgrPrim.h>
 #include <l1/App.h>
+#include <arch/atomic.h>
 }
 #include <l0/cplus/CPlusEBB.H>
 #include <l0/cplus/CPlusEBBRoot.H>
@@ -161,11 +162,12 @@ SimpleSharedTest::setup(void)
   DREF(ssac)->flush();
   for (unsigned long i=0; i<HASHTABLESIZE; i++) {
     id = i;
-    rc=DREF(ssac)->get((CacheObjectId &)id,(CacheEntry * &)entry, SSAC::GETFORWRITE);
+  //  rc=DREF(ssac)->get((CacheObjectId &)id,(CacheEntry * &)entry, SSAC::GETFORWRITE);
     rc = CPLUS_EBBCALL(ssac, get, (CacheObjectId &)id,(CacheEntry * &)entry, SSAC::GETFORWRITE);
     entry->data = (void *)i; // set data pointer 
-    rc = CPLUS_EBBCALL(ssac, putback, (CacheObjectId &)id,(CacheEntry * &)entry, SSAC::GETFORWRITE);
+    rc = CPLUS_EBBCALL(ssac, putback,(CacheEntry * &)entry, SSAC::KEEP);
     //rc=DREF(ssac)->putback((CacheEntry * &)entry, SSAC::KEEP);
+    
   }
   return rc;
 }
@@ -210,6 +212,8 @@ SSACTST_start(AppRef _self )
   if (argc>4) w=atof(argv[4]);
   if (argc>5) p=atoi(argv[5]);
 #endif 
+  
+  atomic_synchronize();
 
   // create the ebb id
   SSACTestId ssa_test;

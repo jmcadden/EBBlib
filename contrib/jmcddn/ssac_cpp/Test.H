@@ -3,6 +3,7 @@
 
 #define OUTPUT_CSV
 
+//TODO: arch-augnostic "now" function
 inline unsigned long long
 now(void)
 {
@@ -20,7 +21,7 @@ class Barrier {
   volatile int leaveCount;
   void reset() { enterCount = leaveCount = size; }
   void leave() {
-     __sync_sub_and_fetch(&leaveCount, 1);
+     atomic_sub_and_fetch(&leaveCount, 1);
      if (leaveCount == 0 ) reset();  // last one to leave resets barrier
   }
 public:

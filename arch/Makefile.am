@@ -3,6 +3,7 @@ include arch/powerpc/Makefile.am
 
 arch_sources = \
 	arch/args.h \
+	arch/atomic.h \
 	arch/cpu.h
 
 if x86_64
