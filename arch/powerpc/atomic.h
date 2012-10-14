@@ -26,44 +26,89 @@
 inline uint32_t 
 atomic_fetch_and_add (volatile uint32_t *addr, uint32_t val)
 {
-  return __sync_fetch_and_add(addr, val);
+    uint32_t oval;
+    uint32_t tmp;
+
+    __asm__ ("\n"
+	"# _FetchAndAdd32						\n"
+	"	lwarx	%1,0,%4		# oval = (*ptr)	[linked]	\n"
+	"	add	%2,%1,%3	# tmp = oval + val		\n"
+	"	stwcx.	%2,0,%4		# (*ptr) = tmp	[conditional]	\n"
+	"	bne-	$-12		# if (store failed) retry	\n"
+	"# end _FetchAndAdd32						\n"
+	: "=m" (*(char*)ptr), "=&r" (oval), "=&r" (tmp)
+	: "r" (val), "r" (ptr), "m" (*(char*)ptr)
+	: "cc"
+	);
+
+    return oval;
 }
 
 inline uint32_t 
 atomic_fetch_and_or  (volatile uint32_t *addr, uint32_t val)
 {
-  return __sync_fetch_and_or(addr, val);
+  uint32_t oval;
+  uint32_t tmp;
+
+  __asm__ ("\n"
+      "# _FetchAndOr32						\n"
+      "	lwarx	%1,0,%4		# oval = (*ptr)	[linked]	\n"
+      "	or	%2,%1,%3	# tmp = oval OR val		\n"
+      "	stwcx.	%2,0,%4		# (*ptr) = tmp	[conditional]	\n"
+      "	bne-	$-12		# if (store failed) retry	\n"
+      "# end _FetchAndOr32						\n"
+      : "=m" (*(char*)ptr), "=&r" (oval), "=&r" (tmp)
+      : "r" (val), "r" (ptr), "m" (*(char*)ptr)
+      : "cc"
+      );
+
+  return oval;
 }
 
 inline uint32_t 
 atomic_fetch_and_and (volatile uint32_t *addr, uint32_t val)
 {
-  return __sync_fetch_and_and(addr, val);
+    uint32_t oval;
+    uint32_t tmp;
+
+    __asm__ ("\n"
+	"# _FetchAndAnd32						\n"
+	"	lwarx	%1,0,%4		# oval = (*ptr)	[linked]	\n"
+	"	and	%2,%1,%3	# tmp = oval AND val		\n"
+	"	stwcx.	%2,0,%4		# (*ptr) = tmp	[conditional]	\n"
+	"	bne-	$-12		# if (store failed) retry	\n"
+	"# end _FetchAndAnd32						\n"
+	: "=m" (*(char*)ptr), "=&r" (oval), "=&r" (tmp)
+	: "r" (val), "r" (ptr), "m" (*(char*)ptr)
+	: "cc"
+	);
+
+    return oval;
 }
 
 inline uint32_t 
 atomic_add_and_fetch (volatile uint32_t *addr, uint32_t val)
 {
-  return __sync_add_and_fetch(addr, val);
+  return 0; 
 }
 
 inline uint32_t 
 atomic_sub_and_fetch (volatile uint32_t *addr, uint32_t val)
 {
-  return __sync_sub_and_fetch(addr, val);
+  return 0;
 }
 
 
 inline uint32_t 
 atomic_or_and_fetch  (volatile uint32_t *addr, uint32_t val)
 {
-  return __sync_or_and_fetch( addr, val);
+  return 0;
 }
 
 inline uint32_t 
 atomic_and_and_fetch (volatile uint32_t *addr, uint32_t val)
 {
-  return __sync_and_and_fetch(addr, val);
+  return 0;
 }
 
 
@@ -71,13 +116,32 @@ inline uint32_t
 atomic_bool_compare_and_swap (volatile uint32_t *addr, 
     uint32_t oldval, uint32_t newval)
 {
-  return __sync_bool_compare_and_swap(addr, oldval, newval);
+    uint32_t tmp;
+
+    __asm__ ("\n"
+	"# _CompareAndStore32						\n"
+	"	lwarx	%1,0,%4		# tmp = (*ptr)	[linked]	\n"
+	"	cmplw	%1,%2		# if (tmp != oval)		\n"
+	"	bne-	$+20		#     goto failure		\n"
+	"	stwcx.	%3,0,%4		# (*ptr) = nval	[conditional]	\n"
+	"	bne-	$-16		# if (store failed) retry	\n"
+	"	li	%1,1		# tmp = SUCCESS			\n"
+	"	b	$+8		# goto end			\n"
+	"	li	%1,0		# tmp = FAILURE			\n"
+	"# end _CompareAndStore32					\n"
+	: "=m" (*(char*)ptr), "=&r" (tmp)
+	: "r" (oval), "r" (nval), "r" (ptr), "m" (*(char*)ptr)
+	: "cc"
+	);
+
+    return tmp;
+
 }
 
-inline uint32_t 
+inline void 
 atomic_synchronize (void)
 {
-  __sync_syncronize();
+   __asm__ __volatile__ ("isync" : : : "memory");
 }
 
 #endif
