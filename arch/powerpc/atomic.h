@@ -66,7 +66,7 @@ atomic_fetch_and_or  (volatile uint32_t *ptr, uint32_t val)
 }
 
 inline uint32_t 
-atomic_fetch_and_and (volatile uint32_t *addr, uint32_t val)
+atomic_fetch_and_and (volatile uint32_t *ptr, uint32_t val)
 {
     uint32_t oval;
     uint32_t tmp;
@@ -113,8 +113,7 @@ atomic_and_and_fetch (volatile uint32_t *ptr, uint32_t val)
 
 
 inline uint32_t 
-atomic_bool_compare_and_swap (volatile uint32_t *ptr, 
-    uint32_t oldval, uint32_t newval)
+atomic_bool_compare_and_swap (volatile uint32_t *ptr, uint32_t oval, uint32_t nval)
 {
     uint32_t tmp;
 
