@@ -24,13 +24,29 @@
  */
 
 #define atomic_fetch_and_add            __sync_fetch_and_add
+#define atomic_fetch_and_add32          __sync_fetch_and_add
+
 #define atomic_fetch_and_or             __sync_fetch_and_or
+#define atomic_fetch_and_or32           __sync_fetch_and_or
+
 #define atomic_fetch_and_and            __sync_fetch_and_and
+#define atomic_fetch_and_and32          __sync_fetch_and_and
+
 #define atomic_add_and_fetch            __sync_add_and_fetch
+#define atomic_add_and_fetch32          __sync_add_and_fetch
+
 #define atomic_sub_and_fetch            __sync_sub_and_fetch
+#define atomic_sub_and_fetce32          __sync_sub_and_fetch
+
 #define atomic_or_and_fetch             __sync_or_and_fetch
+#define atomic_or_and_fetch32           __sync_or_and_fetch
+
 #define atomic_and_and_fetch            __sync_and_and_fetch
+#define atomic_and_and_fetch32          __sync_and_and_fetch
+
 #define atomic_bool_compare_and_swap    __sync_bool_compare_and_swap
+#define atomic_bool_compare_and_swap32  __sync_bool_compare_and_swap
+
 #define atomic_synchronize              __sync_synchronize
 
 #if 0

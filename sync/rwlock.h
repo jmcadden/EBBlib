@@ -31,7 +31,7 @@
 
 typedef union rwlock
 {
-  unsigned val;
+  uint32_t val;
   uint16_t val16;
   struct {
     uint8_t write;
@@ -55,7 +55,7 @@ rwlock_wrlock(rwlock *l)
   temp.users = 1;
 
   //Atomically acquire a ticket and increment the count
-  unsigned me = atomic_fetch_and_add(&l->val, temp.val);
+  unsigned me = atomic_fetch_and_add32(&l->val, temp.val);
 
   temp.val = me;
   uint8_t val = temp.users;
@@ -89,7 +89,7 @@ rwlock_rdlock(rwlock *l)
   temp.users = 1;
 
   //Atomically acquire a ticket and increment the count
-  unsigned me = atomic_fetch_and_add(&l->val, temp.val);
+  unsigned me = atomic_fetch_and_add32(&l->val, temp.val);
 
   temp.val = me;
   uint8_t val = temp.users;
@@ -107,7 +107,7 @@ rwlock_rdunlock(rwlock *l)
 {
   //we increment the write queue so if the next user is a writer,
   //they get through once all readers unlock
-  atomic_add_and_fetch(&l->write, 1);
+  atomic_add_and_fetch32(&l->write, 1);
 }
 
 #endif
