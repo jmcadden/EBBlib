@@ -24,7 +24,7 @@
  */
 
 inline uint32_t 
-atomic_fetch_and_add (volatile uint32_t *addr, uint32_t val)
+atomic_fetch_and_add (volatile uint32_t *ptr, uint32_t val)
 {
     uint32_t oval;
     uint32_t tmp;
@@ -45,7 +45,7 @@ atomic_fetch_and_add (volatile uint32_t *addr, uint32_t val)
 }
 
 inline uint32_t 
-atomic_fetch_and_or  (volatile uint32_t *addr, uint32_t val)
+atomic_fetch_and_or  (volatile uint32_t *ptr, uint32_t val)
 {
   uint32_t oval;
   uint32_t tmp;
@@ -87,33 +87,33 @@ atomic_fetch_and_and (volatile uint32_t *addr, uint32_t val)
 }
 
 inline uint32_t 
-atomic_add_and_fetch (volatile uint32_t *addr, uint32_t val)
+atomic_add_and_fetch (volatile uint32_t *ptr, uint32_t val)
 {
   return 0; 
 }
 
 inline uint32_t 
-atomic_sub_and_fetch (volatile uint32_t *addr, uint32_t val)
+atomic_sub_and_fetch (volatile uint32_t *ptr, uint32_t val)
 {
   return 0;
 }
 
 
 inline uint32_t 
-atomic_or_and_fetch  (volatile uint32_t *addr, uint32_t val)
+atomic_or_and_fetch  (volatile uint32_t *ptr, uint32_t val)
 {
   return 0;
 }
 
 inline uint32_t 
-atomic_and_and_fetch (volatile uint32_t *addr, uint32_t val)
+atomic_and_and_fetch (volatile uint32_t *ptr, uint32_t val)
 {
   return 0;
 }
 
 
 inline uint32_t 
-atomic_bool_compare_and_swap (volatile uint32_t *addr, 
+atomic_bool_compare_and_swap (volatile uint32_t *ptr, 
     uint32_t oldval, uint32_t newval)
 {
     uint32_t tmp;
