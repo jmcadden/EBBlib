@@ -23,6 +23,9 @@
  * THE SOFTWARE.
  */
 
+#define atomic_fetch_and_sub            __sync_fetch_and_sub
+#define atomic_fetch_and_sub32          __sync_fetch_and_sub
+
 #define atomic_fetch_and_add            __sync_fetch_and_add
 #define atomic_fetch_and_add32          __sync_fetch_and_add
 
@@ -48,63 +51,5 @@
 #define atomic_bool_compare_and_swap32  __sync_bool_compare_and_swap
 
 #define atomic_synchronize              __sync_synchronize
-
-#if 0
-inline uint32_t 
-atomic_fetch_and_add (volatile uint32_t *addr, uint32_t val)
-{
-  return __sync_fetch_and_add(addr, val);
-}
-
-inline uint32_t 
-atomic_fetch_and_or  (volatile uint32_t *addr, uint32_t val)
-{
-  return __sync_fetch_and_or(addr, val);
-}
-
-inline uint32_t 
-atomic_fetch_and_and (volatile uint32_t *addr, uint32_t val)
-{
-  return __sync_fetch_and_and(addr, val);
-}
-
-inline uint32_t 
-atomic_add_and_fetch (volatile uint32_t *addr, uint32_t val)
-{
-  return __sync_add_and_fetch(addr, val);
-}
-
-inline uint32_t 
-atomic_sub_and_fetch (volatile uint32_t *addr, uint32_t val)
-{
-  return __sync_sub_and_fetch(addr, val);
-}
-
-
-inline uint32_t 
-atomic_or_and_fetch  (volatile uint32_t *addr, uint32_t val)
-{
-  return __sync_or_and_fetch( addr, val);
-}
-
-inline uint32_t 
-atomic_and_and_fetch (volatile uint32_t *addr, uint32_t val)
-{
-  return __sync_and_and_fetch(addr, val);
-}
-
-inline uint32_t 
-atomic_bool_compare_and_swap (volatile uint32_t *addr, 
-    uint32_t oldval, uint32_t newval)
-{
-  return __sync_bool_compare_and_swap(addr, oldval, newval);
-}
-
-inline void 
-atomic_synchronize (void)
-{
-  __sync_synchronize();
-}
-#endif
 
 #endif

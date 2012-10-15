@@ -30,6 +30,7 @@
 #include <l0/lrt/bare/stdio.h>
 #include <l0/lrt/bare/string.h>
 #include <l0/lrt/event.h>
+#include <arch/atomic.h>
 FILE *stdout;
 FILE *stdin;
 FILE *stderr;
@@ -213,7 +214,7 @@ int
 vfprintf(FILE *stream, const char *format, va_list ap)
 {
   static volatile int lock;
-  while (!__sync_bool_compare_and_swap(&lock, 0, 1))
+  while (!atomic_bool_compare_and_swap32(&lock, 0, 1))
     ;
   unsigned char flags;
   unsigned int count = 0;

@@ -21,6 +21,8 @@
  */
 
 #include <sync/barrier.h>
+#include <arch/atomic.h>
+
 
 void
 init_barrier(struct barrier_s *b, int c)
@@ -29,7 +31,6 @@ init_barrier(struct barrier_s *b, int c)
   b->count = c;
   b->sense = 0;
 }
-
 
 void
 barrier(struct barrier_s *b, int *thrsense)

@@ -38,6 +38,7 @@
 #include <l0/MemMgrPrim.h>
 #include <l1/MsgMgr.h>
 #include <l1/MsgMgrPrim.h>
+#include <arch/atomic.h>
 #include <sync/spinlocks.h>
 
 // globally known id of the message mgr
@@ -354,7 +355,7 @@ MsgMgrPrim_createRep(CObjEBBRootMultiRef rootRef)
 EBBRC
 MsgMgrPrim_Init(void)
 {
-  if (__sync_bool_compare_and_swap(&theMsgMgrId, (MsgMgrId)0,
+  if (atomic_bool_compare_and_swap32(&theMsgMgrId, (MsgMgrId)0,
                                    (MsgMgrId)-1)) {
     EBBRC rc;
     EBBId id;

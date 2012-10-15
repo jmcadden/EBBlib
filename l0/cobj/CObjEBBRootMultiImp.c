@@ -45,14 +45,14 @@ struct RepListNode_s {
 static inline void
 lockReps(CObjEBBRootMultiImpRef self)
 {
-  while (!__sync_bool_compare_and_swap(&self->lock, 0, 1));
+  while (!atomic_bool_compare_and_swap32(&self->lock, 0, 1));
 }
 
 static inline void
 unlockReps(CObjEBBRootMultiImpRef self)
 {
   uintptr_t res;
-  if ((res = __sync_bool_compare_and_swap(&self->lock, 1, 0))!=1) {
+  if ((res = atomic_bool_compare_and_swap32(&self->lock, 1, 0))!=1) {
     LRT_Assert(res == 1);
   }
 }

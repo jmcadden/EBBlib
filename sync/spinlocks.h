@@ -22,6 +22,8 @@
 #ifndef __SYNC_SPINLOCKS_H__
 #define __SYNC_SPINLOCKS_H__
 
+#include <arch/atomic.h>
+
 typedef uint32_t SpinLock;
 
 static inline void
@@ -29,14 +31,14 @@ spinLock(SpinLock *lk)
 {
   uintptr_t rc = 0;
   while (!rc) {
-    rc = __sync_bool_compare_and_swap(lk, 0, 1);
+    rc = atomic_bool_compare_and_swap32(lk, 0, 1);
   }
 }
 
 static inline void
 spinUnlock(SpinLock *lk)
 {
-  __sync_bool_compare_and_swap(lk, 1, 0);
+  atomic_bool_compare_and_swap32(lk, 1, 0);
 }
 
 #endif

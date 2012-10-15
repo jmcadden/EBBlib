@@ -101,7 +101,7 @@ EventMgrPrimExpImp_allocEventNo(EventMgrPrimRef _self, EventNo *eventNoPtr)
   //we start from the beginning and just find the first
   // unallocated event
   for (i = 0; i < LRT_EVENT_NUM_EVENTS; i++) {
-    uint8_t res = __sync_fetch_and_or(&alloc_table[i / 8], 1 << (i % 8));
+    uint8_t res = atomic_fetch_and_or32(&alloc_table[i / 8], 1 << (i % 8));
     if (!(res & (1 << (i % 8)))) {
       break;
     }
@@ -116,7 +116,7 @@ EventMgrPrimExpImp_allocEventNo(EventMgrPrimRef _self, EventNo *eventNoPtr)
 static EBBRC
 EventMgrPrimExpImp_freeEventNo(EventMgrPrimRef _self, EventNo eventNo)
 {
-  __sync_fetch_and_and(&alloc_table[eventNo / 8], ~(1 << (eventNo % 8)));
+  atomic_fetch_and_and32(&alloc_table[eventNo / 8], ~(1 << (eventNo % 8)));
   return EBBRC_OK;
 }
 
@@ -347,7 +347,7 @@ EventMgrPrimExpInit(void)
   EBBRC rc;
   static CObjEBBRootMultiImpRef rootRef;
 
-  if (__sync_bool_compare_and_swap(&theEventMgrPrimId, (EventMgrPrimId)0,
+  if (atomic_bool_compare_and_swap32(&theEventMgrPrimId, (EventMgrPrimId)0,
                                    (EventMgrPrimId)-1)) {
     EBBId id;
      rc = CObjEBBRootMultiImpCreate(&rootRef, EventMgrPrimImp_createRep);

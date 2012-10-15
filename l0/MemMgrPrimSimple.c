@@ -44,6 +44,7 @@
 #include <l0/MemMgr.h>
 #include <l0/MemMgrPrim.h>
 #include <l0/lrt/mem.h>
+#include <arch/atomic.h>
 
 /*
  * this depends on posix compiler, since a long is assumed to be size of a pointer
@@ -239,14 +240,14 @@ EBBMemMgrPrimSimpleInit()
   EBBRC rc;
   EBBId id;
   
-  if (__sync_bool_compare_and_swap(&(theEBBMemMgrPrimId), 0, -1)) {
+  if (atomic_bool_compare_and_swap32(&(theEBBMemMgrPrimId), 0, -1)) {
     CObjEBBRootMultiImpStaticInit(rootRef, MemMgrPrimRB_createRep);
     rc = EBBAllocPrimIdBoot(&id);
     LRT_RCAssert(rc);
     rc = CObjEBBBindBoot(id, rootRef); 
     LRT_RCAssert(rc);
     
-    __sync_bool_compare_and_swap(&(theEBBMemMgrPrimId), -1, id);
+    atomic_bool_compare_and_swap32(&(theEBBMemMgrPrimId), -1, id);
   } else {   
     // racing with root creation...wait till root is ready
     while ((*(volatile uintptr_t *)&theEBBMemMgrPrimId)==-1);

@@ -25,6 +25,7 @@
 #include <stdint.h>
 
 #include <arch/amd64/sysio.h>
+#include <arch/amd64/sysio.h>
 #include <lrt/io.h>
 
 /* offsets from serial port address: */

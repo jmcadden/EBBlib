@@ -23,6 +23,7 @@
  * THE SOFTWARE.
  */
 #include<arch/cpu.h>
+#include<arch/atomic.h>
 
 /*
  * Bitvector as macro for arbitrary number of bits.  Uses atomic operations
@@ -42,7 +43,7 @@ NAME ## _set_bit_bv(struct NAME ## _bvs *bv, int bit)		\
 {								\
   int word = bit/WORDSIZE_BITS;						\
   uintptr_t mask = (uintptr_t)1 << (bit%WORDSIZE_BITS);			\
-  __sync_fetch_and_or (&bv->vec[word], mask);			\
+  atomic_fetch_and_or32 (&bv->vec[word], mask);			\
 }								\
 static inline int						\
 NAME ## _get_unset_bit_bv(struct NAME ## _bvs *bv)		\
@@ -59,7 +60,7 @@ NAME ## _get_unset_bit_bv(struct NAME ## _bvs *bv)		\
     if (bv->vec[word] & mask) {					\
       /* found a set bit */					\
       uintptr_t mask = ~((uintptr_t)1 << bit);			\
-      __sync_fetch_and_and(&bv->vec[word], mask);		\
+      atomic_fetch_and_and32(&bv->vec[word], mask);		\
       break;							\
     }								\
   }								\

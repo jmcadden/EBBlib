@@ -21,6 +21,7 @@
  */
 #include <config.h>
 #include <inttypes.h>
+#include <arch/atomic.h>
 #include <lrt/io.h>
 #include <lrt/assert.h>
 #include <l0/cobj/cobj.h>
@@ -66,7 +67,7 @@ void
 create_app_obj_default(void)
 {
   EBBRC rc;
-  if (__sync_bool_compare_and_swap(&theAppId, (AppId)0,
+  if (atomic_bool_compare_and_swap32(&theAppId, (AppId)0,
 				   (AppId)-1)) {  
     EBBId id;
     CObjEBBRootMultiImpRef appRoot;

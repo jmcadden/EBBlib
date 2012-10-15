@@ -107,7 +107,7 @@ EBBRC
 EBBMgrPrimInit()
 {
   EBBRC rc = EBBRC_OK;
-  if (__sync_bool_compare_and_swap(&theEBBMgrPrimId, (EBBMgrPrimId)0,
+  if (atomic_bool_compare_and_swap32(&theEBBMgrPrimId, (EBBMgrPrimId)0,
                                    (EBBMgrPrimId)-1)) {
     EBBId id;
     CObjEBBRootMultiImpRef rootRef;
