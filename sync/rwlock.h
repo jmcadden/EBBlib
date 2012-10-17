@@ -107,7 +107,7 @@ rwlock_rdunlock(rwlock *l)
 {
   //we increment the write queue so if the next user is a writer,
   //they get through once all readers unlock
-  atomic_add_and_fetch32(&l->write, 1);
+  atomic_add_and_fetch8(&l->write, 1);
 }
 
 #endif

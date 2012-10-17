@@ -47,6 +47,9 @@ clear_bss(void)
   }
 }
 
+//This is so I can write to _start without a complaint
+// that it should never be NULL
+
 void __attribute__((section(".init.text")))
 init_mapping(void)
 {

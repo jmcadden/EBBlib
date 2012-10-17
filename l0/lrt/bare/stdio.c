@@ -214,7 +214,7 @@ int
 vfprintf(FILE *stream, const char *format, va_list ap)
 {
   static volatile int lock;
-  while (!atomic_bool_compare_and_swap32(&lock, 0, 1))
+  while (!atomic_bool_compare_and_swap32((uint32_t *)&lock, 0, 1))
     ;
   unsigned char flags;
   unsigned int count = 0;

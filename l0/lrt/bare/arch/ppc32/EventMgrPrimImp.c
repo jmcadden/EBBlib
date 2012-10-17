@@ -58,7 +58,7 @@ event_set_bit_bv(struct event_bvs *bv, int bit)
 {
   int word = bit / 32;
   uint32_t mask = (uint32_t)1 << (bit % 32);
-  atomic_or_and_fetch323232(&bv->vec[word], mask);
+  atomic_or_and_fetch32(&bv->vec[word], mask);
 }
 
 static inline int
@@ -94,7 +94,7 @@ EventMgrPrimImp_allocEventNo(EventMgrPrimRef _self, EventNo *eventNoPtr)
   //we start from the beginning and just find the first
   // unallocated event
   for (i = 0; i < LRT_EVENT_NUM_EVENTS; i++) {
-    uint8_t res = atomic_fetch_and_or32(&alloc_table[i / 8], 1 << (i % 8));
+    uint8_t res = atomic_fetch_and_or8(&alloc_table[i / 8], 1 << (i % 8));
     if (!(res & (1 << (i % 8)))) {
       break;
     }
@@ -109,7 +109,7 @@ EventMgrPrimImp_allocEventNo(EventMgrPrimRef _self, EventNo *eventNoPtr)
 static EBBRC
 EventMgrPrimImp_freeEventNo(EventMgrPrimRef _self, EventNo eventNo)
 {
-  atomic_fetch_and_and32(&alloc_table[eventNo / 8], ~(1 << (eventNo % 8)));
+  atomic_fetch_and_and8(&alloc_table[eventNo / 8], ~(1 << (eventNo % 8)));
   return EBBRC_OK;
 }
 
@@ -322,8 +322,7 @@ EventMgrPrimImpInit(void)
   EBBRC rc;
   static CObjEBBRootMultiImpRef rootRef;
 
-  if (atomic_bool_compare_and_swap32(&theEventMgrPrimId, (EventMgrPrimId)0,
-                                   (EventMgrPrimId)-1)) {
+  if (atomic_bool_compare_and_swap((uintptr_t *)&theEventMgrPrimId, 0, -1)) {
     EBBId id;
      rc = CObjEBBRootMultiImpCreate(&rootRef, EventMgrPrimImp_createRep);
     LRT_RCAssert(rc);

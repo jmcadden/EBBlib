@@ -67,8 +67,7 @@ void
 create_app_obj_default(void)
 {
   EBBRC rc;
-  if (atomic_bool_compare_and_swap32(&theAppId, (AppId)0,
-				   (AppId)-1)) {  
+  if (atomic_bool_compare_and_swap((uintptr_t *)&theAppId, 0, -1)) {  
     EBBId id;
     CObjEBBRootMultiImpRef appRoot;
     // create App instance and invoke its start

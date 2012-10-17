@@ -121,8 +121,7 @@ InitMsgHandlerTst()
 {
   static MsgHandlerId theMsgHandlerTstId=0;
 
-  if (atomic_bool_compare_and_swap32(&theMsgHandlerTstId, (MsgHandlerId)0,
-                                   (MsgHandlerId)-1)) {
+  if (atomic_bool_compare_and_swap((uintptr_t *)&theMsgHandlerTstId, 0, -1)) {
     EBBRC rc;
     CObjEBBRootMultiImpRef rootRef;
     EBBId id;

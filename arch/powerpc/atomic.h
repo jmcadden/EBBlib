@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-  inline uint32_t 
+static inline uint32_t 
 atomic_fetch_and_add (volatile uint32_t *ptr, uint32_t val)
 {
   uint32_t oval;
@@ -43,7 +43,7 @@ atomic_fetch_and_add (volatile uint32_t *ptr, uint32_t val)
   return oval;
 }
 
-  inline uint32_t 
+static inline uint32_t 
 atomic_fetch_and_add32 (volatile uint32_t *ptr, uint32_t val)
 {
   uint32_t oval;
@@ -64,7 +64,7 @@ atomic_fetch_and_add32 (volatile uint32_t *ptr, uint32_t val)
   return oval;
 }
 
-  inline uint32_t 
+static inline uint32_t 
 atomic_fetch_and_or  (volatile uint32_t *ptr, uint32_t val)
 {
   uint32_t oval;
@@ -85,7 +85,29 @@ atomic_fetch_and_or  (volatile uint32_t *ptr, uint32_t val)
   return oval;
 }
 
-  inline uint32_t 
+static inline uint8_t 
+atomic_fetch_and_or8  (volatile uint8_t *ptr, uint8_t val)
+{
+  uint8_t oval;
+  uint8_t tmp;
+
+  __asm__ ("\n"
+      "# _FetchAndOr32						\n"
+      "	lwarx	%1,0,%4		# oval = (*ptr)	[linked]	\n"
+      " stb %1,0(0) \n"
+      " stb %3,0(9) \n"
+      "	or	%2,0,9	# tmp = oval OR val		\n"
+      "	stwcx.	%2,0,%4		# (*ptr) = tmp	[conditional]	\n"
+      "	bne-	$-12		# if (store failed) retry	\n"
+      "# end _FetchAndOr32						\n"
+      : "=m" (*(char*)ptr), "=&r" (oval), "=&r" (tmp)
+      : "r" (val), "r" (ptr), "m" (*(char*)ptr)
+      : "cc"
+      );
+
+  return oval;
+}
+static inline uint32_t 
 atomic_fetch_and_or32  (volatile uint32_t *ptr, uint32_t val)
 {
   uint32_t oval;
@@ -106,7 +128,7 @@ atomic_fetch_and_or32  (volatile uint32_t *ptr, uint32_t val)
   return oval;
 }
 
-  inline uint32_t 
+static inline uint32_t 
 atomic_fetch_and_and (volatile uint32_t *ptr, uint32_t val)
 {
   uint32_t oval;
@@ -127,7 +149,30 @@ atomic_fetch_and_and (volatile uint32_t *ptr, uint32_t val)
   return oval;
 }
 
-  inline uint32_t 
+static inline uint8_t 
+atomic_fetch_and_and8 (volatile uint8_t *ptr, uint8_t val)
+{
+  uint8_t oval;
+  uint8_t tmp;
+
+  __asm__ ("\n"
+      "# _FetchAndAnd32						\n"
+      "	lwarx	%1,0,%4		# oval = (*ptr)	[linked]	\n"
+      " stb %1,0(0) \n"
+      " stb %3,0(9) \n"
+      " and	%2,9,0	# tmp = oval AND val		\n"
+      "	stwcx.	%2,0,%4		# (*ptr) = tmp	[conditional]	\n"
+      "	bne-	$-12		# if (store failed) retry	\n"
+      "# end _FetchAndAnd32						\n"
+      : "=m" (*(char*)ptr), "=&r" (oval), "=&r" (tmp)
+      : "r" (val), "r" (ptr), "m" (*(char*)ptr)
+      : "cc"
+      );
+
+  return oval;
+}
+
+static inline uint32_t 
 atomic_fetch_and_and32 (volatile uint32_t *ptr, uint32_t val)
 {
   uint32_t oval;
@@ -148,7 +193,7 @@ atomic_fetch_and_and32 (volatile uint32_t *ptr, uint32_t val)
   return oval;
 }
 
-  inline uint32_t 
+static inline uint32_t 
 atomic_add_and_fetch (volatile uint32_t *ptr, uint32_t val)
 {
   uint32_t oval;
@@ -169,7 +214,32 @@ atomic_add_and_fetch (volatile uint32_t *ptr, uint32_t val)
   return tmp;
 }
 
-  inline uint32_t 
+static inline uint8_t 
+atomic_add_and_fetch8 (volatile uint8_t *ptr, uint8_t val)
+{
+  uint32_t oval;
+  uint32_t tmp;
+
+  __asm__ ("\n"
+      "# _FetchAndAdd32						\n"
+      "	lwarx	%1,0,%4		# oval = (*ptr)	[linked]	\n"
+      " stb %1,0(0) \n"
+      " stb %3,0(9) \n"
+      " add	%2,9,0	# tmp = oval + val		\n"
+      "#add	%2,%1,%3	# tmp = oval + val		\n"
+      "	stwcx.	%2,0,%4		# (*ptr) = tmp	[conditional]	\n"
+      "	bne-	$-12		# if (store failed) retry	\n"
+      "# end _FetchAndAdd32						\n"
+      : "=m" (*(char*)ptr), "=&r" (oval), "=&r" (tmp)
+      : "r" (val), "r" (ptr), "m" (*(char*)ptr)
+      : "cc"
+      );
+
+  return tmp;
+}
+
+
+static inline uint32_t 
 atomic_add_and_fetch32 (volatile uint32_t *ptr, uint32_t val)
 {
   uint32_t oval;
@@ -190,7 +260,7 @@ atomic_add_and_fetch32 (volatile uint32_t *ptr, uint32_t val)
   return tmp;
 }
 
-  inline uint32_t 
+  static inline uint32_t 
 atomic_sub_and_fetch (volatile uint32_t *ptr, uint32_t val)
 {
   uint32_t oval;
@@ -211,7 +281,7 @@ atomic_sub_and_fetch (volatile uint32_t *ptr, uint32_t val)
   return tmp;
 }
 
-  inline uint32_t 
+  static inline uint32_t 
 atomic_sub_and_fetch32 (volatile uint32_t *ptr, uint32_t val)
 {
   uint32_t oval;
@@ -232,7 +302,7 @@ atomic_sub_and_fetch32 (volatile uint32_t *ptr, uint32_t val)
   return tmp;
 }
 
-  inline uint32_t 
+  static inline uint32_t 
 atomic_or_and_fetch  (volatile uint32_t *ptr, uint32_t val)
 {
   uint32_t oval;
@@ -253,7 +323,7 @@ atomic_or_and_fetch  (volatile uint32_t *ptr, uint32_t val)
   return tmp;
 }
 
-  inline uint32_t 
+  static inline uint32_t 
 atomic_or_and_fetch32  (volatile uint32_t *ptr, uint32_t val)
 {
   uint32_t oval;
@@ -274,7 +344,7 @@ atomic_or_and_fetch32  (volatile uint32_t *ptr, uint32_t val)
   return tmp;
 }
 
-  inline uint32_t 
+  static inline uint32_t 
 atomic_and_and_fetch (volatile uint32_t *ptr, uint32_t val)
 {
   uint32_t oval;
@@ -295,7 +365,7 @@ atomic_and_and_fetch (volatile uint32_t *ptr, uint32_t val)
   return tmp;
 }
 
-  inline uint32_t 
+  static inline uint32_t 
 atomic_and_and_fetch32 (volatile uint32_t *ptr, uint32_t val)
 {
   uint32_t oval;
@@ -317,7 +387,7 @@ atomic_and_and_fetch32 (volatile uint32_t *ptr, uint32_t val)
 }
 
 
-  inline uintptr_t 
+  static inline uintptr_t 
 atomic_bool_compare_and_swap (volatile uintptr_t *ptr, uintptr_t oval, uintptr_t nval)
 {
   uint32_t tmp;
@@ -340,7 +410,7 @@ atomic_bool_compare_and_swap (volatile uintptr_t *ptr, uintptr_t oval, uintptr_t
   return tmp;
 }
 
-  inline uint32_t 
+  static inline uint32_t 
 atomic_bool_compare_and_swap32 (volatile uint32_t *ptr, uint32_t oval, uint32_t nval)
 {
   uint32_t tmp;
@@ -363,7 +433,7 @@ atomic_bool_compare_and_swap32 (volatile uint32_t *ptr, uint32_t oval, uint32_t 
   return tmp;
 }
 
-  inline void 
+  static inline void 
 atomic_synchronize (void)
 {
   //__asm__ __volatile__ ("eieio" : : : "memory");

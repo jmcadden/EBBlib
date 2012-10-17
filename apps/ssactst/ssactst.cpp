@@ -97,29 +97,28 @@ SSACTest::work(int myid)
   TRACE("BEGIN");
   CacheObjectIdSimple id(0);
   CacheEntrySimple *entry=0;
-  int readCount, writeCount;
+ // int readCount, writeCount;
   EBBRC rc;
   intptr_t v;
 
-  readCount = (1-writePct) * numEvents;
-  writeCount = writePct * numEvents;
+  //readCount = (1-writePct) * numEvents;
+  //writeCount = writePct * numEvents;
   rc = 0;
 
   for (int j=0; j<1;j++) {
-    for (int i=0; i<writeCount; i++) {
+    for (int i=0; i<numEvents; i++) {
+    //for (int i=0; i<writeCount; i++) {
       id = i;
-      rc = DREF(ssac)->get((CacheObjectId &)id,(CacheEntry * &)entry,
-			   SSAC::GETFORWRITE);
+      rc = CPLUS_EBBCALL(ssac, get, (CacheObjectId &)id,(CacheEntry * &)entry, SSAC::GETFORWRITE);
       v=(intptr_t)entry->data; v++; entry->data=(void *)v;
       entry->dirty();
-      rc =DREF(ssac)->putback((CacheEntry * &)entry, SSAC::KEEP);
+      rc = CPLUS_EBBCALL(ssac, putback,(CacheEntry * &)entry, SSAC::KEEP);
     }
-    for (int k=0; k<readCount; k++){
-      id = k;
-      rc = DREF(ssac)->get((CacheObjectId &)id,(CacheEntry * &)entry,
-			   SSAC::GETFORREAD);
-      v=(intptr_t)entry->data;
-    }
+   // for (int k=0; k<readCount; k++){
+   //   id = k;
+   //   rc = CPLUS_EBBCALL(ssac, get, (CacheObjectId &)id,(CacheEntry * &)entry, SSAC::GETFORREAD);
+   //   v=(intptr_t)entry->data;
+   // }
   }
   return rc;
 }
@@ -127,7 +126,8 @@ SSACTest::work(int myid)
 EBBRC
 SSACTest::end()
 {
-  DREF(ssac)->snapshot();
+  EBBRC rc;
+  rc = CPLUS_EBBCALL(ssac, snapshot);
 /* DUMP OUT TEST DATA
   int index;
   printf("Test, Process, Start, End, Dif\n");
@@ -159,7 +159,7 @@ SimpleSharedTest::setup(void)
   CacheObjectIdSimple id(0);
   CacheEntrySimple *entry=0;
   // flush cache and full with garbage data
-  DREF(ssac)->flush();
+  rc = CPLUS_EBBCALL(ssac, flush);
   for (unsigned long i=0; i<HASHTABLESIZE; i++) {
     id = i;
   //  rc=DREF(ssac)->get((CacheObjectId &)id,(CacheEntry * &)entry, SSAC::GETFORWRITE);
@@ -218,7 +218,7 @@ SSACTST_start(AppRef _self )
   // create the ebb id
   SSACTestId ssa_test;
   SimpleSharedTest::create(ssa_test);
-  CPLUS_EBBCALL(ssa_test, set_vars, 3, 5, .5);
+  CPLUS_EBBCALL(ssa_test, set_vars, 3, 5, 5);
   CPLUS_EBBCALL(ssa_test, run);
 
   lrt_printf("Compleated SSAC Test App!\n");
