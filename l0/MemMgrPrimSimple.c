@@ -247,7 +247,7 @@ EBBMemMgrPrimSimpleInit()
     rc = CObjEBBBindBoot(id, rootRef); 
     LRT_RCAssert(rc);
     
-    atomic_bool_compare_and_swap32(&(theEBBMemMgrPrimId), -1, id);
+    atomic_bool_compare_and_swap32((uintptr_t *)&(theEBBMemMgrPrimId), -1, (uintptr_t *)id);
   } else {   
     // racing with root creation...wait till root is ready
     while ((*(volatile uintptr_t *)&theEBBMemMgrPrimId)==-1);
