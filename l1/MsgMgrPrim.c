@@ -355,8 +355,7 @@ MsgMgrPrim_createRep(CObjEBBRootMultiRef rootRef)
 EBBRC
 MsgMgrPrim_Init(void)
 {
-  if (atomic_bool_compare_and_swap32(&theMsgMgrId, (MsgMgrId)0,
-                                   (MsgMgrId)-1)) {
+  if (atomic_bool_compare_and_swap((uintptr_t *)&theMsgMgrId,0,-1)) {
     EBBRC rc;
     EBBId id;
 

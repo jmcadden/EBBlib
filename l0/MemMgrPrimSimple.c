@@ -240,14 +240,14 @@ EBBMemMgrPrimSimpleInit()
   EBBRC rc;
   EBBId id;
   
-  if (atomic_bool_compare_and_swap32(&(theEBBMemMgrPrimId), 0, -1)) {
+  if (atomic_bool_compare_and_swap((uintptr_t *)&(theEBBMemMgrPrimId), 0, -1)) {
     CObjEBBRootMultiImpStaticInit(rootRef, MemMgrPrimRB_createRep);
     rc = EBBAllocPrimIdBoot(&id);
     LRT_RCAssert(rc);
     rc = CObjEBBBindBoot(id, rootRef); 
     LRT_RCAssert(rc);
     
-    atomic_bool_compare_and_swap32((uintptr_t *)&(theEBBMemMgrPrimId), -1, (uintptr_t *)id);
+    atomic_bool_compare_and_swap((uintptr_t *)&(theEBBMemMgrPrimId), -1, (uintptr_t)id);
   } else {   
     // racing with root creation...wait till root is ready
     while ((*(volatile uintptr_t *)&theEBBMemMgrPrimId)==-1);

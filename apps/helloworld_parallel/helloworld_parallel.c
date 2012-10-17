@@ -55,7 +55,7 @@ HelloWorld_Parallel_start(AppRef _self)
 
   static volatile int barrier_init;
   static struct barrier_s bar;
-  if (atomic_bool_compare_and_swap32(&barrier_init, 0, 1)) {
+  if (atomic_bool_compare_and_swap32((uint32_t *)&barrier_init, 0, 1)) {
     init_barrier(&bar, NumEventLoc());
     barrier_init = 2;
   } else {

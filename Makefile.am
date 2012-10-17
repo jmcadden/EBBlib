@@ -82,7 +82,7 @@ LDADD = -lgcc
 endif
 
 AM_CFLAGS += $(BAREFLAGS)
-AM_CXXFLAGS += $(BAREFLAGS) -fno-exceptions -fno-rtti -fno-stack-protector
+AM_CXXFLAGS += $(BAREFLAGS) -fno-exceptions -fno-rtti -fno-stack-protector -Wno-strict-aliasing
 
 endif
 
