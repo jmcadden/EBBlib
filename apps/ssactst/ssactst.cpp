@@ -47,6 +47,7 @@ extern "C" {
 #include "EBBKludge.H"
 #include "ebb/Test.H"
 #include "lib/SSACSimpleSharedArray.H"
+#include "lib/SSACSimplePartitionedArray.H"
 
 #define DEFAULT_HASHQ_COUNT 192
 
@@ -158,16 +159,12 @@ SimpleSharedTest::setup(void)
   SSACSimpleSharedArray::Create(ssac, HASHTABLESIZE);
   CacheObjectIdSimple id(0);
   CacheEntrySimple *entry=0;
-  // flush cache and full with garbage data
   rc = CPLUS_EBBCALL(ssac, flush);
   for (unsigned long i=0; i<HASHTABLESIZE; i++) {
     id = i;
-  //  rc=DREF(ssac)->get((CacheObjectId &)id,(CacheEntry * &)entry, SSAC::GETFORWRITE);
     rc = CPLUS_EBBCALL(ssac, get, (CacheObjectId &)id,(CacheEntry * &)entry, SSAC::GETFORWRITE);
     entry->data = (void *)i; // set data pointer 
     rc = CPLUS_EBBCALL(ssac, putback,(CacheEntry * &)entry, SSAC::KEEP);
-    //rc=DREF(ssac)->putback((CacheEntry * &)entry, SSAC::KEEP);
-    
   }
   return rc;
 }
@@ -213,8 +210,6 @@ SSACTST_start(AppRef _self )
   if (argc>5) p=atoi(argv[5]);
 #endif 
   
-  atomic_synchronize();
-
   // create the ebb id
   SSACTestId ssa_test;
   SimpleSharedTest::create(ssa_test);

@@ -2,11 +2,6 @@
 #define _SSACSIMPLEPARTITIONEDARRAY_H_
 #include "SSAC.H"
 #include "CacheSimple.H"
-/*
-#include <tornado/sys/GOBJ.H>
-#include <tornado/ot.H>
-#include <tornado/Lock.H>
-*/
 
 
 class SSACSimplePartitionedArray : public SSAC {

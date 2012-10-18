@@ -87,7 +87,7 @@ SSACSimplePartitionedArray :: SSACSimplePartitionedArray( const int &numhashqs,
     _associativity=associativity;
     _numhashqs = numhashqs;
 
-    // TODO: add MYVP to 
+    // TODO: get evnt location 
     if (MYVP < _numhashqs % NUMPROC)
     {
       //TODO: Malloc
@@ -103,152 +103,160 @@ SSACSimplePartitionedArray :: SSACSimplePartitionedArray( const int &numhashqs,
 void
 SSACSimplePartitionedArray :: partition(const int &index, int &vp, int &offset)
 {
-    int overflow = _numhashqs % NUMPROC;
-    int quesperproc=_numhashqs / NUMPROC;
-    
-    if (index < overflow*(quesperproc + 1))
-    {
-	vp=index/(quesperproc+1);
-	offset=index & (quesperproc );
-    } else {
-	vp=index / quesperproc;
-	offset=index & (quesperproc -1);
-    }
+  int overflow = _numhashqs % NUMPROC;
+  int quesperproc=_numhashqs / NUMPROC;
+
+  if (index < overflow*(quesperproc + 1))
+  {
+    vp=index/(quesperproc+1);
+    offset=index & (quesperproc );
+  } else {
+    vp=index / quesperproc;
+    offset=index & (quesperproc -1);
+  }
 }
+
 
 EBBRC 
 SSACSimplePartitionedArray :: get( CacheObjectId &id, CacheEntry* &ce,
-			      const gettype &type )
+    const gettype &type )
 {
-    EBBRC rtn=0;
-       
-    CacheObjectIdSimple& theid=((CacheObjectIdSimple &)id);    
-    register struct HashQueues *hashq;
-    // the assignment of ce to ep is here just to avoid compliation warning
-    CacheEntrySimple *ep=(CacheEntrySimple *)ce;
+  EBBRC rtn=0;
 
-    tassert(theid.valid(),
-	    ass_printf("\nSSACSimplePartitionedArray::get() target id=0x%x is invalid\n"
-		       , theid.id()));
+  CacheObjectIdSimple& theid=((CacheObjectIdSimple &)id);    
+  register struct HashQueues *hashq;
+  // the assignment of ce to ep is here just to avoid compliation warning
+  CacheEntrySimple *ep=(CacheEntrySimple *)ce;
 
-    int vp=0;
-    int index=0;
+  tassert(theid.valid(),
+      ass_printf("\nSSACSimplePartitionedArray::get() target id=0x%x is invalid\n"
+        , theid.id()));
 
-    partition(theid.index(_numhashqs),vp,index);
+  int vp=0;
+  int index=0;
 
-    if (vp!=MYVP)
-    {
-      // TODO: ebbcalls
-      // line below used to avoid uninitilize warnings
-	hashq = &(_hashqs[index]);
-      /*
-	SSACSimplePartitionedArray *rep=(SSACSimplePartitionedArray *)
-	    ((SSACSimplePartitionedMH *)MYMHO)->findRepOn(vp);
-	if (!rep)
-	    rep=(SSACSimplePartitionedArray *)
-		(((SSACSimplePartitionedMH *)MYMHO)->createRepOn(vp));
-	hashq = &(rep->_hashqs[index]);
-      */
-    }
-    else
-    {
-	hashq = &(_hashqs[index]);
-    }
-    
-    
-    if (!hashq->entries) {
-	hashq->lock.acquireLock();
-	hashq->init(_associativity);
-	hashq->lock.releaseLock();
-    }
+  partition(theid.index(_numhashqs),vp,index);
 
- again:    
+  if (vp!=MYVP)
+  {
+    // TODO: ebbcalls
+    // line below used to avoid uninitilize warnings
+    hashq = &(_hashqs[index]);
+    /*  
+     *  1) root ref of ID
+     *  2) step through list to find rep core
+     *  3) if no rep? - we must ebbcall the rep shortly hereafter, that will
+     *  miss? Else, we need to send a NoOP ebbcall
+     * */
+    /*
+       SSACSimplePartitionedArray *rep=(SSACSimplePartitionedArray *)
+       ((SSACSimplePartitionedMH *)MYMHO)->findRepOn(vp);
+       if (!rep)
+       rep=(SSACSimplePartitionedArray *)
+       (((SSACSimplePartitionedMH *)MYMHO)->createRepOn(vp));
+       hashq = &(rep->_hashqs[index]);
+       */
+  }
+  else
+  {
+    hashq = &(_hashqs[index]);
+  }
+
+
+  if (!hashq->entries) {
     hashq->lock.acquireLock();
+    hashq->init(_associativity);
+    hashq->lock.releaseLock();
+  }
 
-    ep=hashq->search(theid,_associativity);
+again:    
+  hashq->lock.acquireLock();
+
+  ep=hashq->search(theid,_associativity);
+
+  if (ep)
+  {
+    // hit
+    trace( MISC, TR_INFO,
+        tr_printf(
+          ">>> SSACSimplePartitionedArray::get: Hit: id=%d index=%d ep=%llx:\n",
+          theid.id(), theid.index(_numhashqs),(long long int)ep );
+        ep->print()
+        );
+#ifndef NOLOCKSNOFLAGSNOCOUNTERS
+    if ( ep->flags & CacheEntrySimple::BUSY )
+    {
+      hashq->lock.releaseLock();
+      ep->sleep();
+      goto again;
+    }
+#endif
+#ifndef NOLOCKSNOFLAGSNOCOUNTERS
+    hashq->count++;
+    if (!hashq->count) hashq->rollover();
+    ep->lastused=hashq->count;
+    if ( type == SSAC::GETFORWRITE )
+      ep->flags |= CacheEntrySimple::BUSY;
+    hashq->lock.releaseLock();
+#endif 
+    ce=ep;
+    SET_CLSCD(rtn,1);
+    return rtn;
+  } 
+  else
+  {
+    // miss
+    trace( MISC, TR_INFO,
+        tr_printf(
+          ">>> SSACSimplePartitionedArray::get: Miss: id=%d index=%d\n",
+          theid.id(),theid.index(_numhashqs)));
+
+    ep=hashq->lruentry(_associativity);
 
     if (ep)
     {
-	// hit
-	trace( MISC, TR_INFO,
-	       tr_printf(
-	   ">>> SSACSimplePartitionedArray::get: Hit: id=%d index=%d ep=%llx:\n",
-		   theid.id(), theid.index(_numhashqs),(long long int)ep );
-	       ep->print()
-	    );
 #ifndef NOLOCKSNOFLAGSNOCOUNTERS
-	if ( ep->flags & CacheEntrySimple::BUSY )
-	{
-	    hashq->lock.releaseLock();
-	    ep->sleep();
-	    goto again;
-	}
+      if (ep->flags & CacheEntrySimple::DIRTY)
 #endif
-#ifndef NOLOCKSNOFLAGSNOCOUNTERS
-	hashq->count++;
-	if (!hashq->count) hashq->rollover();
-	ep->lastused=hashq->count;
-	if ( type == SSAC::GETFORWRITE )
-	    ep->flags |= CacheEntrySimple::BUSY;
-	hashq->lock.releaseLock();
-#endif 
-	ce=ep;
-	SET_CLSCD(rtn,1);
-	return rtn;
-    } 
-    else
-    {
-	// miss
-	trace( MISC, TR_INFO,
-	       tr_printf(
-		   ">>> SSACSimplePartitionedArray::get: Miss: id=%d index=%d\n",
-		   theid.id(),theid.index(_numhashqs)));
-
-	ep=hashq->lruentry(_associativity);
-	
-	if (ep)
-	{
-#ifndef NOLOCKSNOFLAGSNOCOUNTERS
-	    if (ep->flags & CacheEntrySimple::DIRTY)
-#endif
-	    {
-		//clean the entry
-		trace( MISC, TR_INFO,
-		       tr_printf(
-		   ">>> SSACSimplePartitionedArray::get:Miss: Cleaning entry:\n"
-			   );
-		           ep->print());
-		ep->id.save(ep->data);
+      {
+        //clean the entry
+        trace( MISC, TR_INFO,
+            tr_printf(
+              ">>> SSACSimplePartitionedArray::get:Miss: Cleaning entry:\n"
+              );
+            ep->print());
+        ep->id.save(ep->data);
 #ifndef NOLOCKSNOFLAGSNOCOUNTERS 
-		ep->flags &= ~CacheEntrySimple::DIRTY;
+        ep->flags &= ~CacheEntrySimple::DIRTY;
 #endif 
-	    }
-	    ep->id=theid;
-	    ep->data=ep->id.load();
-	}
-	else  
-	{
-	    // no free elements take the simple way out for the moment
-	    // just pass back an error code
-	    trace( MISC, TR_INFO,
-		   tr_printf(
-		    ">>> SSACSimplePartitionedArray::get: Miss:*NOFREE ENTRIES*\n"
-		       ));
-	    SET_CLSCD(rtn,0);
-	    hashq->lock.releaseLock();
-	    return rtn;
-	}
-	hashq->count++;
-	if (!hashq->count) hashq->rollover();
-	ep->lastused=hashq->count;
-	if ( type == SSAC::GETFORWRITE )
-	    ep->flags |= CacheEntrySimple::BUSY;
-	hashq->lock.releaseLock();
-	ce=ep;
-	SET_CLSCD(rtn,1);
-	return rtn;
+      }
+      ep->id=theid;
+      ep->data=ep->id.load();
     }
+    else  
+    {
+      // no free elements take the simple way out for the moment
+      // just pass back an error code
+      trace( MISC, TR_INFO,
+          tr_printf(
+            ">>> SSACSimplePartitionedArray::get: Miss:*NOFREE ENTRIES*\n"
+            ));
+      SET_CLSCD(rtn,0);
+      hashq->lock.releaseLock();
+      return rtn;
+    }
+    hashq->count++;
+    if (!hashq->count) hashq->rollover();
+    ep->lastused=hashq->count;
+    if ( type == SSAC::GETFORWRITE )
+      ep->flags |= CacheEntrySimple::BUSY;
+    hashq->lock.releaseLock();
+    ce=ep;
+    SET_CLSCD(rtn,1);
+    return rtn;
+  }
 }
+
 
 EBBRC
 SSACSimplePartitionedArray :: putback( CacheEntry* &ce, const putflag &flag )
@@ -311,105 +319,105 @@ SSACSimplePartitionedArray :: putback( CacheEntry* &ce, const putflag &flag )
 EBBRC
 SSACSimplePartitionedArray :: flush()
 {
-    register struct HashQueues *hashq;
-    register CacheEntrySimple *ce;
-    register int i;
-    
-    for (i=0; i<_numhashqs; i++)
+  register struct HashQueues *hashq;
+  register CacheEntrySimple *ce;
+  register int i;
+
+  for (i=0; i<_numhashqs; i++)
+  {
+    hashq = &(_hashqs[i]);
+    if (!hashq->entries) continue;
+again:	
+    hashq->lock.acquireLock();
+    for ( register int j=0; j<_associativity; j++ )
     {
-	hashq = &(_hashqs[i]);
-	if (!hashq->entries) continue;
-    again:	
-	hashq->lock.acquireLock();
-	for ( register int j=0; j<_associativity; j++ )
-	{
-	    ce=&(hashq->entries[j]);
-	    if ( !(ce->flags & CacheEntrySimple::BUSY)
-               && (ce->id.valid())	    
-		 && ( ce->flags & CacheEntrySimple::DIRTY ))
-	    {
-		trace( MISC, TR_INFO,
-		       tr_printf(">>> SSACSimplePartitionedArray::flush: entry:");
-		       ce->print()
-		       );
-		ce->flags |= CacheEntrySimple::BUSY;
-		hashq->lock.releaseLock();
-		ce->id.save(ce->data);
-		hashq->lock.acquireLock();
-		ce->flags &= ~CacheEntrySimple::DIRTY &
-		             ~CacheEntrySimple::BUSY;
-		hashq->lock.releaseLock();
-		ce->wakeup();
-		goto again;
-	    }
-	}
-	hashq->lock.releaseLock();
+      ce=&(hashq->entries[j]);
+      if ( !(ce->flags & CacheEntrySimple::BUSY)
+          && (ce->id.valid())	    
+          && ( ce->flags & CacheEntrySimple::DIRTY ))
+      {
+        trace( MISC, TR_INFO,
+            tr_printf(">>> SSACSimplePartitionedArray::flush: entry:");
+            ce->print()
+            );
+        ce->flags |= CacheEntrySimple::BUSY;
+        hashq->lock.releaseLock();
+        ce->id.save(ce->data);
+        hashq->lock.acquireLock();
+        ce->flags &= ~CacheEntrySimple::DIRTY &
+          ~CacheEntrySimple::BUSY;
+        hashq->lock.releaseLock();
+        ce->wakeup();
+        goto again;
+      }
     }
-    return 0;
+    hashq->lock.releaseLock();
+  }
+  return 0;
 }
 
 SSACSimplePartitionedArray :: ~SSACSimplePartitionedArray()
 {
   /*
-    trace( MISC, TR_INFO,
-	  tr_printf("**** ~SSACSimplePartitionedArray ref=%lx\n",_ref));
-    delete[] _hashqs; 
-  */
+     trace( MISC, TR_INFO,
+     tr_printf("**** ~SSACSimplePartitionedArray ref=%lx\n",_ref));
+     delete[] _hashqs; 
+     */
 }
 
-EBBRC
+  EBBRC
 SSACSimplePartitionedArray :: snapshot()
 {
-    struct HashQueues *hashq;
-    int i,j,flags,vp,index=0;
-    int numqsonvp,numqsonevenvps=_numhashqs/NUMPROC,unevenvps=_numhashqs % NUMPROC;
-    SSACSimplePartitionedArray *rep;
-	
-    for (vp=0; vp<NUMPROC; vp++)
+  struct HashQueues *hashq;
+  int i,j,flags,vp,index=0;
+  int numqsonvp,numqsonevenvps=_numhashqs/NUMPROC,unevenvps=_numhashqs % NUMPROC;
+  SSACSimplePartitionedArray *rep;
+
+  for (vp=0; vp<NUMPROC; vp++)
+  {
+    numqsonvp=numqsonevenvps;
+    if (vp < unevenvps)
     {
-	numqsonvp=numqsonevenvps;
-	if (vp < unevenvps)
-	{
-	    numqsonvp++;
-	}
-        //EBBCALLS
-        /*
-	rep=(SSACSimplePartitionedArray *)
-	    ((SSACSimplePartitionedMH *)MYMHO)->findRepOn(vp);
-            tassert(rep, ass_printf("\n **** ERROR: snapshot:  could not findRepOn %d\n",
-				vp));
-	*/
-	tr_printf("Hash Queues on vp=%d\n",vp);
-	for (i=0; i<numqsonvp; i++)
-	{
-	    hashq = &(rep->_hashqs[i]);
-            rep = NULL;
-	    hashq->lock.acquireLock();
-	    tr_printf("_hashq[%d].count=%lu\n_hashqs[%d].entries: ",index,hashq->count,index);
-	    if (hashq->entries)
-		for ( j=0; j<_associativity; j++)
-		{
-		    tr_printf("%d:%d:%lu:%lx:",j,
-			      hashq->entries[j].id.id(),
-			      hashq->entries[j].lastused,
-			      (long unsigned int)hashq->entries[j].data);
-		    flags=(hashq->entries[j]).flags;
-		    if (flags & CacheEntrySimple::BUSY)
-			printf("B|");
-		    else printf("F|");
-		    if (flags & CacheEntrySimple::DIRTY)
-			printf("D ");
-		    else printf("C ");
-		}
-	    else
-		tr_printf("NULL");
-	    tr_printf("\n");
-	    hashq->lock.releaseLock();
-	    index++;
-	}
+      numqsonvp++;
     }
-    return 0;
+    //EBBCALLS
+    /*
+       rep=(SSACSimplePartitionedArray *)
+       ((SSACSimplePartitionedMH *)MYMHO)->findRepOn(vp);
+       tassert(rep, ass_printf("\n **** ERROR: snapshot:  could not findRepOn %d\n",
+       vp));
+       */
+    tr_printf("Hash Queues on vp=%d\n",vp);
+    for (i=0; i<numqsonvp; i++)
+    {
+      hashq = &(rep->_hashqs[i]);
+      rep = NULL;
+      hashq->lock.acquireLock();
+      tr_printf("_hashq[%d].count=%lu\n_hashqs[%d].entries: ",index,hashq->count,index);
+      if (hashq->entries)
+        for ( j=0; j<_associativity; j++)
+        {
+          tr_printf("%d:%d:%lu:%lx:",j,
+              hashq->entries[j].id.id(),
+              hashq->entries[j].lastused,
+              (long unsigned int)hashq->entries[j].data);
+          flags=(hashq->entries[j]).flags;
+          if (flags & CacheEntrySimple::BUSY)
+            printf("B|");
+          else printf("F|");
+          if (flags & CacheEntrySimple::DIRTY)
+            printf("D ");
+          else printf("C ");
+        }
+      else
+        tr_printf("NULL");
+      tr_printf("\n");
+      hashq->lock.releaseLock();
+      index++;
+    }
+  }
+  return 0;
 }
-  
- 
+
+
  
