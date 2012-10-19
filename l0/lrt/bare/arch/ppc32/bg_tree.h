@@ -32,7 +32,39 @@
 #define TREE_IRQ_NONCRIT_NUM	20
 #define TREE_NONCRIT_BASE	0
 #define TREE_FIFO_SIZE		8
+#define TREE_PAYLOAD		256
 
+#define _BGP_TRx_DI      (0x00)    // Offset from Tree VCx for Data   Injection   (WO,Quad)
+#define _BGP_TRx_HI      (0x10)    // Offset from Tree VCx for Header Injection   (WO,Word)
+#define _BGP_TRx_DR      (0x20)    // Offset from Tree VCx for Data   Reception   (RO,Quad)
+#define _BGP_TRx_HR      (0x30)    // Offset from Tree VCx for Header Reception   (RO,Word)
+#define _BGP_TRx_Sx      (0x40)    // Offset from Tree VCx for Status             (RO,Word)
+#define _BGP_TRx_SO      (0x50)    // Offset from Tree VCx for Status of Other VC (RO,Word)
+
+// Virtual Addresses for Tree VC0
+#define _BGP_TR0_DI    (_BGP_VA_TREE0 | _BGP_TRx_DI)
+#define _BGP_TR0_HI    (_BGP_VA_TREE0 | _BGP_TRx_HI)
+#define _BGP_TR0_DR    (_BGP_VA_TREE0 | _BGP_TRx_DR)
+#define _BGP_TR0_HR    (_BGP_VA_TREE0 | _BGP_TRx_HR)
+#define _BGP_TR0_S0    (_BGP_VA_TREE0 | _BGP_TRx_Sx)
+#define _BGP_TR0_S1    (_BGP_VA_TREE0 | _BGP_TRx_SO)
+
+// Virtual Addresses for Tree VC1
+#define _BGP_TR1_DI    (_BGP_VA_TREE1 | _BGP_TRx_DI)
+#define _BGP_TR1_HI    (_BGP_VA_TREE1 | _BGP_TRx_HI)
+#define _BGP_TR1_DR    (_BGP_VA_TREE1 | _BGP_TRx_DR)
+#define _BGP_TR1_HR    (_BGP_VA_TREE1 | _BGP_TRx_HR)
+#define _BGP_TR1_S1    (_BGP_VA_TREE1 | _BGP_TRx_Sx)
+#define _BGP_TR1_S0    (_BGP_VA_TREE1 | _BGP_TRx_SO)
+
+// Packet Payload: fixed size for all Tree packets
+#define _BGP_TREE_PKT_MAX_BYTES    (256)       // bytes in a tree packet
+#define _BGP_TREE_PKT_MAX_SHORT    (128)
+#define _BGP_TREE_PKT_MAX_LONG      (64)
+#define _BGP_TREE_PKT_MAX_LONGLONG  (32)
+#define _BGP_TREE_PKT_MAX_QUADS     (16)       // quads in a tree packet
+
+#if 0
 /* mystical double-hummer optcode translation macros */
 #define LFPDX(frt, ra, rb, addr) \
   asm volatile( ".long %[val]" \
@@ -47,6 +79,7 @@
       : [val] "i" ((31<<26)|((frt)<<21)|((ra)<<16)|((rb)<<11)|(974<<1)) \
       "r" (addr) \
       );
+#endif
 
 union bgtree_header {
   unsigned int raw;
@@ -93,10 +126,11 @@ struct channel_t
 
 FILE *bgtree_init(void);
 void bgtree_secondary_init(void);
-uintptr_t bgtree_get_channel(int c);
+uintptr_t bgtree_get_channel(int);
 void bgtree_debug(void);
+void bgtree_inject_packet(uint32_t *, void *, void *, uint32_t);
+void bgtree_receive_240(void *, uint32_t);
 void bgtree_clear_inj_exception_flags(void);
 void bgtree_clear_recv_exception_flags(void);
 
 #endif
-

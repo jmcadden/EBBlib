@@ -66,118 +66,108 @@ static inline void mtdcrx(int dcr, int val)
   return ;
 };
 
-/*
-static inline void bgtree_inject_packet(u32 *dest, void *lnkhdr, void *payload,
-					u32 mioaddr)
+inline void 
+bgtree_inject_packet (uint32_t *dest, void *lnkhdr, void *payload, uint32_t mioaddr)
 {
-    asm volatile(
-	"lfpdx   0,0,%4;"	// F0=Q0 load *lnkhdr(%4)
-	"stw     %3,%c5(%1);"	// store dest to HI offset from mioaddr
-	"lfpdx   1,0,%0;"	// F1=Q1 load from *payload
-	"lfpdux  2,%0,%6;"	// F2=Q2 load from *(payload+16)
-	"lfpdux  3,%0,%6;"	// F3=Q3 load
-	"stfpdx  0,0,%2;"	// Q0 store to *(mioaddr + TRx_DI)
-	"lfpdux  4,%0,%6;"	// F4=Q4 load
-	"lfpdux  5,%0,%6;"	// F5=Q5 load
-	"lfpdux  6,%0,%6;"	// F6=Q6 load
-	"stfpdx  1,0,%2;"	// Q1 store
-	"stfpdx  2,0,%2;"	// Q2 store
-	"stfpdx  3,0,%2;"	// Q3 store
-	"lfpdux  7,%0,%6;"	// F7=Q7 load
-	"lfpdux  8,%0,%6;"	// F8=Q8 load
-	"lfpdux  9,%0,%6;"	// F9=Q9 load
-	"stfpdx  4,0,%2;"	// Q4 store
-	"stfpdx  5,0,%2;"	// Q5 store
-	"stfpdx  6,0,%2;"	// Q6 store
-	"lfpdux  0,%0,%6;"	// F0=Q10 load
-	"lfpdux  1,%0,%6;"	// F1=Q11 load
-	"lfpdux  2,%0,%6;"	// F2=Q12 load
-	"stfpdx  7,0,%2;"	// Q7 store
-	"stfpdx  8,0,%2;"	// Q8 store
-	"stfpdx  9,0,%2;"	// Q9 store
-	"lfpdux  3,%0,%6;"	// F3=Q13 load
-	"lfpdux  4,%0,%6;"	// F4=Q14 load
-	"lfpdux  5,%0,%6;"	// F5=Q15 load
-	"stfpdx  0,0,%2;"	// Q10 store
-	"stfpdx  1,0,%2;"	// Q11 store
-	"stfpdx  2,0,%2;"	// Q12 store
-	"stfpdx  3,0,%2;"	// Q13 store
-	"stfpdx  4,0,%2;"	// Q14 store
-	"stfpdx  5,0,%2;"	// Q15 store
-	: "=b"  (payload)	// 0
-	: "b"   (mioaddr),	// 1
-	  "b"   (mioaddr +
-		 _BGP_TRx_DI),	// 2 (data injection fifo address)
-	  "b"   (*dest),	// 3
-	  "b"   (lnkhdr),	// 4
-	  "i"   (_BGP_TRx_HI),	// 5
-	  "b"   (16),		// 6 (bytes per quad)
-	  "0"   (payload)	// "payload" is input and output
-	: "fr0", "fr1", "fr2",
-	  "fr3", "fr4", "fr5",
-	  "fr6", "fr7", "fr8",
-	  "fr9", "memory"
-    );
-}
-*/
-
-static inline void bgtree_inject_packet(unsigned int *dest, void *lnkhdr, void *payload,
-					unsigned int mioaddr)
-{
-
-    // This link puts this address into r3 into asm? 
-    //register unsigned int addr asm ("r3") = (unsigned int)tree + 0x20;
-  /* 
   asm volatile(
-	"lfpdx   0,0,%4;"	// F0=Q0 load *lnkhdr(%4)
-	"stw     %3,%c5(%1);"	// store dest to HI offset from mioaddr
-	"lfpdx   1,0,%0;"	// F1=Q1 load from *payload
-	"lfpdux  2,%0,%6;"	// F2=Q2 load from *(payload+16)
-	"lfpdux  3,%0,%6;"	// F3=Q3 load
-	"stfpdx  0,0,%2;"	// Q0 store to *(mioaddr + TRx_DI)
-	"lfpdux  4,%0,%6;"	// F4=Q4 load
-	"lfpdux  5,%0,%6;"	// F5=Q5 load
-	"lfpdux  6,%0,%6;"	// F6=Q6 load
-	"stfpdx  1,0,%2;"	// Q1 store
-	"stfpdx  2,0,%2;"	// Q2 store
-	"stfpdx  3,0,%2;"	// Q3 store
-	"lfpdux  7,%0,%6;"	// F7=Q7 load
-	"lfpdux  8,%0,%6;"	// F8=Q8 load
-	"lfpdux  9,%0,%6;"	// F9=Q9 load
-	"stfpdx  4,0,%2;"	// Q4 store
-	"stfpdx  5,0,%2;"	// Q5 store
-	"stfpdx  6,0,%2;"	// Q6 store
-	"lfpdux  0,%0,%6;"	// F0=Q10 load
-	"lfpdux  1,%0,%6;"	// F1=Q11 load
-	"lfpdux  2,%0,%6;"	// F2=Q12 load
-	"stfpdx  7,0,%2;"	// Q7 store
-	"stfpdx  8,0,%2;"	// Q8 store
-	"stfpdx  9,0,%2;"	// Q9 store
-	"lfpdux  3,%0,%6;"	// F3=Q13 load
-	"lfpdux  4,%0,%6;"	// F4=Q14 load
-	"lfpdux  5,%0,%6;"	// F5=Q15 load
-	"stfpdx  0,0,%2;"	// Q10 store
-	"stfpdx  1,0,%2;"	// Q11 store
-	"stfpdx  2,0,%2;"	// Q12 store
-	"stfpdx  3,0,%2;"	// Q13 store
-	"stfpdx  4,0,%2;"	// Q14 store
-	"stfpdx  5,0,%2;"	// Q15 store
-	: "=b"  (payload)	// 0
-	: "b"   (mioaddr),	// 1
-	  "b"   (mioaddr +
-		 _BGP_TRx_DI),	// 2 (data injection fifo address)
-	  "b"   (*dest),	// 3
-	  "b"   (lnkhdr),	// 4
-	  "i"   (_BGP_TRx_HI),	// 5
-	  "b"   (16),		// 6 (bytes per quad)
-	  "0"   (payload)	// "payload" is input and output
+      "lfpdx   0,0,%4;"	// F0=Q0 load *lnkhdr(%4)
+      "stw     %3,%c5(%1);"	// store dest to HI offset from mioaddr
+      "lfpdx   1,0,%0;"	// F1=Q1 load from *payload
+      "lfpdux  2,%0,%6;"	// F2=Q2 load from *(payload+16)
+      "lfpdux  3,%0,%6;"	// F3=Q3 load
+      "stfpdx  0,0,%2;"	// Q0 store to *(mioaddr + TRx_DI)
+      "lfpdux  4,%0,%6;"	// F4=Q4 load
+      "lfpdux  5,%0,%6;"	// F5=Q5 load
+      "lfpdux  6,%0,%6;"	// F6=Q6 load
+      "stfpdx  1,0,%2;"	// Q1 store
+      "stfpdx  2,0,%2;"	// Q2 store
+      "stfpdx  3,0,%2;"	// Q3 store
+      "lfpdux  7,%0,%6;"	// F7=Q7 load
+      "lfpdux  8,%0,%6;"	// F8=Q8 load
+      "lfpdux  9,%0,%6;"	// F9=Q9 load
+      "stfpdx  4,0,%2;"	// Q4 store
+      "stfpdx  5,0,%2;"	// Q5 store
+      "stfpdx  6,0,%2;"	// Q6 store
+      "lfpdux  0,%0,%6;"	// F0=Q10 load
+      "lfpdux  1,%0,%6;"	// F1=Q11 load
+      "lfpdux  2,%0,%6;"	// F2=Q12 load
+      "stfpdx  7,0,%2;"	// Q7 store
+      "stfpdx  8,0,%2;"	// Q8 store
+      "stfpdx  9,0,%2;"	// Q9 store
+      "lfpdux  3,%0,%6;"	// F3=Q13 load
+      "lfpdux  4,%0,%6;"	// F4=Q14 load
+      "lfpdux  5,%0,%6;"	// F5=Q15 load
+      "stfpdx  0,0,%2;"	// Q10 store
+      "stfpdx  1,0,%2;"	// Q11 store
+      "stfpdx  2,0,%2;"	// Q12 store
+      "stfpdx  3,0,%2;"	// Q13 store
+      "stfpdx  4,0,%2;"	// Q14 store
+      "stfpdx  5,0,%2;"	// Q15 store
+      : "=b"  (payload)	// 0
+      : "b"   (mioaddr),	// 1
+      "b"   (mioaddr +
+          _BGP_TRx_DI),	// 2 (data injection fifo address)
+          "b"   (*dest),	// 3
+          "b"   (lnkhdr),	// 4
+          "i"   (_BGP_TRx_HI),	// 5
+          "b"   (16),		// 6 (bytes per quad)
+          "0"   (payload)	// "payload" is input and output
+         : "fr0", "fr1", "fr2",
+         "fr3", "fr4", "fr5",
+         "fr6", "fr7", "fr8",
+         "fr9", "memory"
+            );
+}
+
+
+inline void 
+bgtree_receive_240(void *payload, uint32_t mioaddr)
+{
+  /* read the payload via 16 consectative quadword (128bit) reads from the
+   * payload reception register */
+    asm volatile(
+	"lfpdx   1,0,%1;"	// F1=Q1  load
+	"lfpdx   2,0,%1;"	// F2=Q2  load
+	"lfpdx   3,0,%1;"	// F3=Q3  load
+	"lfpdx   4,0,%1;"	// F4=Q4  load
+	"lfpdx   5,0,%1;"	// F5=Q5  load
+	"stfpdx  1,0,%0;"	// Q1  store to *payload
+	"stfpdux 2,%0,%2;"	// Q2  store to *(payload+16)
+	"lfpdx   6,0,%1;"	// F6=Q6  load
+	"lfpdx   7,0,%1;"	// F7=Q7  load
+	"lfpdx   8,0,%1;"	// F8=Q8  load
+	"stfpdux 3,%0,%2;"	// Q3  store
+	"stfpdux 4,%0,%2;"	// Q4  store
+	"stfpdux 5,%0,%2;"	// Q5  store
+	"lfpdx   9,0,%1;"	// F9=Q9  load
+	"lfpdx   0,0,%1;"	// F0=Q10 load
+	"lfpdx   1,0,%1;"	// F1=Q11 load
+	"stfpdux 6,%0,%2;"	// Q6  store
+	"stfpdux 7,%0,%2;"	// Q7  store
+	"stfpdux 8,%0,%2;"	// Q8  store
+	"lfpdx   2,0,%1;"	// F2=Q12 load
+	"lfpdx   3,0,%1;"	// F3=Q13 load
+	"lfpdx   4,0,%1;"	// F4=Q14 load
+	"stfpdux 9,%0,%2;"	// Q9  store
+	"stfpdux 0,%0,%2;"	// Q10 store
+	"stfpdux 1,%0,%2;"	// Q11 store
+	"lfpdx   5,0,%1;"	// F5=Q15 load
+	"stfpdux 2,%0,%2;"	// Q12 store
+	"stfpdux 3,%0,%2;"	// Q13 store
+	"stfpdux 4,%0,%2;"	// Q14 store
+	"stfpdux 5,%0,%2;"	// Q15 store
+	: "=b"   (payload)	// 0
+	: "b"    (mioaddr +
+		  _BGP_TRx_DR),	// 1 (data reception fifo address)
+	  "b"    (16),		// 2 (bytes per quad)
+	  "0"    (payload)	// "payload" is input and output
 	: "fr0", "fr1", "fr2",
 	  "fr3", "fr4", "fr5",
 	  "fr6", "fr7", "fr8",
 	  "fr9", "memory"
     );
-*/
 }
+
 
 void 
 bgtree_clear_inj_exception_flags(void)

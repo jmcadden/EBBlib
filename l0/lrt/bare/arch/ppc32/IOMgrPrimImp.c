@@ -71,9 +71,11 @@ NullTreeObj_Assert(TreeObjRef _self)
   return EBBRC_OK;
 }
 
-EBBRC 
+  EBBRC 
 NullTreeObj_Receive(TreeObjRef _self)
 {
+  /* The null handlered of receive high watermark interrupt */
+  /* clear the both channels of the tree.*/
   uintptr_t tree;
   for( int i = 0 ; i < 2; i++){
     tree = bgtree_get_channel(i);
@@ -81,9 +83,10 @@ NullTreeObj_Receive(TreeObjRef _self)
     uint8_t rcv_hdr = status & 0xf;
     while (rcv_hdr > 0) {
       *(volatile uint32_t *)(tree + 0x30); //read header
-      register unsigned int addr asm ("r3") = (unsigned int)tree + 0x20;
-      for (int j = 0; j < 256; j += 16) {
-        LFPDX(0,0,3,addr);
+      // register unsigned int addr asm ("r3") = (unsigned int)tree + 0x20;
+      for (int j = 0; j < TREE_PAYLOAD; j += 16) {
+        // LFPDX(0,0,3,addr);
+        asm("lfpdx 0,0,%0" :: "b" ((unsigned int)tree + 0x20));
       }
       rcv_hdr--;
     }
@@ -92,7 +95,53 @@ NullTreeObj_Receive(TreeObjRef _self)
   return EBBRC_OK;
 }
 
+EBBRC
+BGTreeObj_Receive(TreeObjRef _self)
+{
+  /* In linux, upon a " receive interrut" we runs a recive() function.
+   * While the rcv_hdr is set (raised?)
+   * Read in the head (and never use it)
+   * Read the first 16 of payload (link header)
+   * Check link_hdr protocol, total pkt, this_pkt
+   * If we're a single packet, (line 550), we recv 240 bits
+   * 240 = 256 payload, minus 16 for packet header
+   */
+    //struct bglink_hdr_tree lnkhdr __attribute__((aligned(16)));
+    unsigned drop, i;
+    void *payloadptr;
+//    struct bgtree_channel *chn = &tree->chn[channel];
+    union bgtree_status status;
+    union bgtree_header dst;
+    struct sk_buff *skb;
+    struct frag_skb *fskb;
+
+    //TODO: read dcr
+    status.raw = 0;//in_be32_nosync((unsigned*)(chn->mioaddr + _BGP_TRx_Sx));
+    
+    /* continue read while receive header count != 0 */
+    while( status.x.rcv_hdr)
+      ;
+
+    // read in packet header from header queue
+    dst.raw = 0; //in_be32_nosync((unsigned*)(chn->mioaddr + _BGP_TRx_HR));
+
+#if 0
+    // XXX: RAW ONLY ignoring link header for now
+    // XXX: ignoring packet fragments
+    // read the first 16 bytes from the payload
+    in_be128(&lnkhdr, (void*)chn->mioaddr + _BGP_TRx_DR);
+    if (lnkhdr.opt.opt_con.len == 1) {
+      char buf[80];
+      sprintf(buf, "trp: %d: %d\n", lnkhdr.lnk_proto, lnkhdr.opt.opt_con.len);
+      mailbox_puts(buf, strlen(buf));
+    }
+#endif
+		bgtree_receive_240(payloadptr,0);//chn->mioaddr);
+
+}
+
 CObjInterface(TreeObj) NullTreeObj_ftable = {
+  /* these handlered tied to tree IRQs */
   .InjectionWatermark = NullTreeObj_Assert,
   .ReceiveWatermark = NullTreeObj_Receive,
   .ReceiveVC0 = NullTreeObj_Assert,

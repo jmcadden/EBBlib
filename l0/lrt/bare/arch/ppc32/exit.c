@@ -52,9 +52,10 @@ lrt_exit(int i)
       uint8_t rcv_hdr = status & 0xf;
       while (rcv_hdr > 0) {
         *(volatile uint32_t *)(tree + 0x30); //read header
-        register unsigned int addr asm ("r3") = (unsigned int)tree + 0x20;
-        for (int j = 0; j < 256; j += 16) {
-          LFPDX(0,0,3,addr);
+        // register unsigned int addr asm ("r3") = (unsigned int)tree + 0x20;
+        for (int j = 0; j < TREE_PAYLOAD; j += 16) {
+          // LFPDX(0,0,3,addr);
+          asm("lfpdx 0,0,%0" :: "b" ((unsigned int)tree + 0x20));
         }
         rcv_hdr--;
       }
