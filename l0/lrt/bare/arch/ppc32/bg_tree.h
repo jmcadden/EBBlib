@@ -115,6 +115,7 @@ union bgtree_status {
     unsigned int rcv_hdr	: 4;
   } x;
 } __attribute__((packed));
+
 struct channel_t
 {
   uintptr_t base;		// virtual base address of tree
@@ -122,7 +123,31 @@ struct channel_t
   uint32_t size;
 } __attribute__((packed));
 
-//
+union link_proto_opt {
+  uint16_t raw;
+  struct {
+    uint16_t option	: 4;
+    uint16_t pad_head	: 4;
+    uint16_t pad_tail	: 8;
+  } opt_net;
+  struct {
+    uint16_t len;
+  } opt_con;
+} __attribute__((packed));
+
+struct bglink_hdr_tree {
+    uint32_t dst_key;
+    uint32_t src_key;
+    uint16_t conn_id;
+    uint8_t this_pkt;
+    uint8_t total_pkt;
+    uint16_t lnk_proto;  // net, con, ...
+    union link_proto_opt opt;
+} __attribute__((packed));
+
+
+#define TREE_LNKHDRLEN		(sizeof(struct bglink_hdr_tree))
+#define TREE_FRAGPAYLOAD	(TREE_PAYLOAD - TREE_LNKHDRLEN)
 
 FILE *bgtree_init(void);
 void bgtree_secondary_init(void);
