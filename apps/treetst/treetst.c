@@ -120,17 +120,54 @@ Treetst_snd(int ch, int i){
   struct bglink_hdr_tree lnkhdr __attribute__((aligned(16)));
   union bgtree_header dest;
   void *payloadptr = 0;
-  struct package p;
   uintptr_t tree;
+  struct package p;
 
-  tree = bgtree_get_channel(ch);
-  p.i = i; /* test value */
-
+  // init datastructures
   EBBPrimMalloc((TREE_FRAGPAYLOAD), payloadptr, EBB_MEM_DEFAULT);
   bzero(payloadptr, TREE_FRAGPAYLOAD);
-  bzero(&dest, sizeof(union bgtree_header)); /*set broadcast. recv,send,route id =0 */
+  bzero(&dest, sizeof(union bgtree_header)); 
   bzero(&lnkhdr, sizeof(struct bglink_hdr_tree)); 
-  lnkhdr.lnk_proto = 9; /* a noticable protcol num */
+
+  tree = bgtree_get_channel(ch);
+  p.i = i; /* send value */
+
+  /* configure link header */
+  //TODO:
+  /* uint32_t dst_key;
+     uint32_t src_key;
+     uint16_t conn_id;
+     uint8_t this_pkt;
+     uint8_t total_pkt;
+     uint16_t lnk_proto;  // net, con, ...
+     union link_proto_opt opt;
+     */
+   lnkhdr.lnk_proto  = 0x10;
+   lnkhdr.dst_key  = 0x10;
+  /* configure pkt header */
+  /*
+     union bgtree_header {
+     unsigned int raw;
+     struct {
+     unsigned int pclass	: 4;
+     unsigned int p2p	: 1;
+     unsigned int irq	: 1;
+     unsigned vector		: 24;
+     unsigned int csum_mode	: 2;
+     } p2p;
+     struct {
+     unsigned int pclass	: 4;
+     unsigned int p2p	: 1;
+     unsigned int irq	: 1;
+     unsigned int op		: 3;
+     unsigned int opsize	: 7;
+     unsigned int tag	: 14;
+     unsigned int csum_mode	: 2;
+     } bcast;
+     } 
+     */
+   dest.bcast.pclass = 15; //tree_route
+   dest.bcast.p2p = 0; // broadcast = true
 
   memcpy((uintptr_t *)(tree + _BGP_TRx_HI), (&dest.raw), sizeof(union bgtree_header));/*write pkt header */
   memcpy((uintptr_t *)(tree + _BGP_TRx_DI), &lnkhdr, sizeof(struct bglink_hdr_tree)); /*write lnk header */
@@ -144,15 +181,12 @@ Treetst_snd(int ch, int i){
 EBBRC
 Treetst_start(AppRef _self){
   lrt_printf("Run treetest\n");
-  /* Read a packet off the tree */
-  while(1){
-    for(int i=1; i<5; i++)
-    {
-      Treetst_snd(0,i);
-    }
-    Treetst_rcv();
-  }
 
+  lrt_printf("send msg to con \n");
+  /* CON WRITE TEST -- send msgs to the linux console */
+  Treetst_snd(0,987);
+
+  lrt_printf("msg sent\n");
   return EBBRC_OK;
 }
 
