@@ -138,7 +138,7 @@ SSACTest::end()
       printf("%d, %d, %llu, %llu, %llu\n", i, j, wargs[index].start, wargs[index].end, wargs[index].end - wargs[index].start);
     }
 */
-  return 0;
+  return rc;
 }
 
 
