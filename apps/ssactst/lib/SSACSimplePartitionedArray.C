@@ -420,4 +420,60 @@ SSACSimplePartitionedArray :: snapshot()
 }
 
 
+#ifdef EBBLIB
+void * 
+SSACSimplePartitionedArray::operator new(size_t size)
+{
+  void *val;
+  EBBRC rc;
+  rc = EBBPrimMalloc(size, &val, EBB_MEM_DEFAULT);
+  LRT_RCAssert(rc);
+  return val;
+}
+
+void 
+SSACSimplePartitionedArray::operator delete(void * p, size_t size)
+{
+  // NYI
+  LRT_RCAssert(0);
+}
+#endif
+
+/* static */ ebbrc
+ssacsimplesharedarray::create(ssacid &id,  const int &numhashqs, const int &associativity)
+{
+  ebbrc rc;
+  ssacsimplesharedarray *rep; 
+  rep = new ssacsimplesharedarray(numhashqs, associativity);
+#ifndef ebblib
+  id = rep; 
+  rc = ebbrc_ok;
+#else
+  cplusebbrootshared *root;
+  // XXX: WE don't have a ebb 
+  root = new cplusebbrootshared();
+
+  // shared root knows about only one rep so we 
+  // pass it along for it's init
+  root->init(rep);
+
+  rc = ebballocprimid((ebbid *)&id);
+  lrt_rcassert(rc);
+
+  rc = cplusebbroot::ebbbind((ebbid)id, root); 
+  lrt_rcassert(rc);
+  rc = ebbrc_ok;
+#endif
+  return rc;
+}
+
+SSACSimplePartitionedArray :: ~SSACSimplePartitionedArray()
+{
+#if DOTRACE
+  trace( MISC, TR_INFO,
+	 tr_printf("**** ~SSACSimplePartitionedArray\n"));
+#endif
+  // TODO Deleted hashq
+  //delete[] _hashqs;
+}
  

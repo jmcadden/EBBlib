@@ -43,7 +43,7 @@ extern "C" {
 #include <l0/cplus/CPlusEBBRoot.H>
 #include <l0/cplus/CPlusEBBRootShared.H>
 
-//XXX: remove kludge!!
+//TODO: remove kludge!!
 #include "EBBKludge.H"
 #include "ebb/Test.H"
 #include "lib/SSACSimpleSharedArray.H"
@@ -138,7 +138,7 @@ SSACTest::end()
       printf("%d, %d, %llu, %llu, %llu\n", i, j, wargs[index].start, wargs[index].end, wargs[index].end - wargs[index].start);
     }
 */
-  return 0;
+  return rc;
 }
 
 
