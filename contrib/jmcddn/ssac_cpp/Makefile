@@ -11,8 +11,8 @@ all: eosSSACTest
 
 # compile and generate dependency info
 %.o: %.C
-	g++ -c $(CXXFLAGS) $*.c -o $*.o
-	g++ -MM $(CXXFLAGS) $*.c > $*.d
+	g++ -c $(CXXFLAGS) $*.C -o $*.o
+	g++ -MM $(CXXFLAGS) $*.C > $*.d
 
 eosSSACTest.o: Test.H 
 
