@@ -71,9 +71,11 @@ NullTreeObj_Assert(TreeObjRef _self)
   return EBBRC_OK;
 }
 
-EBBRC 
+  EBBRC 
 NullTreeObj_Receive(TreeObjRef _self)
 {
+  /* The null handlered of receive high watermark interrupt */
+  /* clear the both channels of the tree.*/
   uintptr_t tree;
   for( int i = 0 ; i < 2; i++){
     tree = bgtree_get_channel(i);
@@ -81,9 +83,10 @@ NullTreeObj_Receive(TreeObjRef _self)
     uint8_t rcv_hdr = status & 0xf;
     while (rcv_hdr > 0) {
       *(volatile uint32_t *)(tree + 0x30); //read header
-      register unsigned int addr asm ("r3") = (unsigned int)tree + 0x20;
-      for (int j = 0; j < 256; j += 16) {
-        LFPDX(0,0,3,addr);
+      // register unsigned int addr asm ("r3") = (unsigned int)tree + 0x20;
+      for (int j = 0; j < TREE_PAYLOAD; j += 16) {
+        // LFPDX(0,0,3,addr);
+        asm("lfpdx 0,0,%0" :: "b" ((unsigned int)tree + 0x20));
       }
       rcv_hdr--;
     }
@@ -92,7 +95,9 @@ NullTreeObj_Receive(TreeObjRef _self)
   return EBBRC_OK;
 }
 
+
 CObjInterface(TreeObj) NullTreeObj_ftable = {
+  /* these handlered tied to tree IRQs */
   .InjectionWatermark = NullTreeObj_Assert,
   .ReceiveWatermark = NullTreeObj_Receive,
   .ReceiveVC0 = NullTreeObj_Assert,
