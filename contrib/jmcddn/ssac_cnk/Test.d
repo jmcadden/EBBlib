@@ -1,0 +1,41 @@
+Test.o: Test.C /bgsys/drivers/ppcfloor/arch/include/spi/bgp_SPI.h \
+  /bgsys/drivers/ppcfloor/arch/include/common/namespace.h \
+  /bgsys/drivers/ppcfloor/arch/include/common/linkage.h \
+  /bgsys/drivers/ppcfloor/arch/include/bpcore/bgp_types.h \
+  /bgsys/drivers/ppcfloor/arch/include/common/alignment.h \
+  /bgsys/drivers/ppcfloor/arch/include/bpcore/ppc450_inlines.h \
+  /bgsys/drivers/ppcfloor/arch/include/bpcore/ppc450_core.h \
+  /bgsys/drivers/ppcfloor/arch/include/common/bgp_bitnumbers.h \
+  /bgsys/drivers/ppcfloor/arch/include/cnk/VirtualMap.h \
+  /bgsys/drivers/ppcfloor/arch/include/cnk/MMIO.h \
+  /bgsys/drivers/ppcfloor/arch/include/cnk/bgp_cnk_Tweaks.h \
+  /bgsys/drivers/ppcfloor/arch/include/common/bgp_personality.h \
+  /bgsys/drivers/ppcfloor/arch/include/common/bgp_chipversion.h \
+  /bgsys/drivers/ppcfloor/arch/include/spi/kernel_interface.h \
+  /bgsys/drivers/ppcfloor/arch/include/spi/bpcore_interface.h \
+  /bgsys/drivers/ppcfloor/arch/include/spi/bgp_kernel_inlines.h \
+  /bgsys/drivers/ppcfloor/arch/include/cnk/bgp_SysCall_Extensions.h \
+  /bgsys/drivers/ppcfloor/arch/include/cnk/bgp_SPRG_Usage.h \
+  /bgsys/drivers/ppcfloor/arch/include/common/bgp_ras.h \
+  /bgsys/drivers/ppcfloor/arch/include/cnk/vmm.h \
+  /bgsys/drivers/ppcfloor/arch/include/bpcore/ppc450_tlb.h \
+  /bgsys/drivers/ppcfloor/arch/include/spi/lockbox_interface.h \
+  /bgsys/drivers/ppcfloor/arch/include/bpcore/lockbox.h \
+  /bgsys/drivers/ppcfloor/arch/include/spi/DMA.h \
+  /bgsys/drivers/ppcfloor/arch/include/spi/DMA_Assert.h \
+  /bgsys/drivers/ppcfloor/arch/include/spi/DMA_Addressing.h \
+  /bgsys/drivers/ppcfloor/arch/include/spi/DMA_Counter.h \
+  /bgsys/drivers/ppcfloor/arch/include/spi/DMA_InjFifo.h \
+  /bgsys/drivers/ppcfloor/arch/include/spi/DMA_Fifo.h \
+  /bgsys/drivers/ppcfloor/arch/include/spi/DMA_Descriptors.h \
+  /bgsys/drivers/ppcfloor/arch/include/spi/DMA_Packet.h \
+  /bgsys/drivers/ppcfloor/arch/include/spi/DMA_RecFifo.h \
+  /bgsys/drivers/ppcfloor/arch/include/spi/DMA_AddressingInternals.h \
+  /bgsys/drivers/ppcfloor/arch/include/spi/GlobInt.h \
+  /bgsys/drivers/ppcfloor/arch/include/bpcore/bgp_global_ints.h \
+  /bgsys/drivers/ppcfloor/arch/include/bpcore/bgp_dcrmap.h \
+  /bgsys/drivers/ppcfloor/arch/include/spi/UPC.h \
+  /bgsys/drivers/ppcfloor/arch/include/spi/UPC_Events.h \
+  /bgsys/drivers/ppcfloor/arch/include/common/bgp_personality_inlines.h \
+  /bgsys/drivers/ppcfloor/arch/include/common/bgp_UCI.h EBBKludge.H \
+  Test.H
