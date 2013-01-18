@@ -1,9 +1,31 @@
 #ifndef __TEST_H__
 #define __TEST_H__
-
 #define OUTPUT_CSV
 
-//TODO: arch-augnostic "now" function
+#if defined(__powerpc__)
+
+inline unsigned long long
+now(void)
+{
+  unsigned long long int result = 0;
+  unsigned long int upper, lower, tmp;
+  __asm__ volatile(
+      "0:                 \n"
+      "\tmftbu    %0      \n"
+      "\tmftb     %1      \n"
+      "\tmftbu    %2      \n"
+      "\tcmpw     %2,%0   \n"
+      "\tbne      0b      \n"
+      : "=r"(upper),"=r"(lower),"=r"(tmp)
+      );
+  result = upper;
+  result = result<<32;
+  result = result|lower;
+  return result;
+}
+
+#else
+
 inline unsigned long long
 now(void)
 {
@@ -12,7 +34,7 @@ now(void)
   __asm__ __volatile__("rdtsc" : "=a" (a), "=d" (d));
   return ((unsigned long long)a) | (((unsigned long long)d) << 32);
 }
-
+#endif
 
 // simple dumb spin based barrier to make life easier
 class Barrier {
