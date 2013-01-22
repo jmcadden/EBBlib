@@ -7,6 +7,13 @@
 #include <mach/mach_interface.h>
 #include <mach/thread_policy.h>
 #endif
+#ifdef __BG__
+#include <mpi.h>
+#include <spi/bgp_SPI.h>
+#include <spi/kernel_interface.h>
+#include <common/bpg_personality.h>
+#include <common/bpg_personality_inlines.h>
+#endif
 
 #include "EBBKludge.H"
 #include "Test.H"
@@ -149,7 +156,7 @@ Test::doWork() {
      *
      *  Binding is handeled differently on Linux and OSX:
      *  APPLE: Create suspended pthread -> apply affinity -> resume thread
-     *  LINUX: Set affinity during create by linux_thread_init_args 
+     *  LINUX: Once created, set infinity via pthread_setaddinity_np
      **/
     if (bindThread > 0){
       if ( create_bound_thread( &(args[i].tid), i, testPThreadFunc, (void *)&(args[i])) < 0) {
@@ -157,9 +164,10 @@ Test::doWork() {
 	    exit(-1);
       }
     }else{
+      printf("non-bound thread");
       if ( pthread_create( &(args[i].tid), NULL, testPThreadFunc, (void *)&(args[i])) != 0) {
-	    perror("pthread_create");
-	    exit(-1);
+	      perror("pthread_create");
+	      exit(-1);
       }
     }
   }
