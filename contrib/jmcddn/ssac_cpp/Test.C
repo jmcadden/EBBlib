@@ -73,7 +73,8 @@ linux_thread_init(void *arg)
 int
 create_bound_thread(pthread_t *tid, int id,  void *(*func)(void *), void *arg)
 {
-    int numcores, pid, rc;
+  printf("creating bound thread");
+  int numcores, pid, rc;
   numcores = num_phys_cores();
   pid = id % numcores;
 
@@ -141,15 +142,23 @@ Test::doWork() {
       args[i].id = i;
       args[i].index = (j*numWorkers)+i;
       args[i].test = this;
-    // create bound threads if specified
+
+    /** THREAD BINDING
+     *  Thread binding is specified by the bindThread boolean passed into the
+     *  test constructor. 
+     *
+     *  Binding is handeled differently on Linux and OSX:
+     *  APPLE: Create suspended pthread -> apply affinity -> resume thread
+     *  LINUX: Set affinity during create by linux_thread_init_args 
+     **/
     if (bindThread > 0){
       if ( create_bound_thread( &(args[i].tid), i, testPThreadFunc, (void *)&(args[i])) < 0) {
-	    perror("pthread_create");
+	    perror("create_bound_thread");
 	    exit(-1);
       }
     }else{
       if ( pthread_create( &(args[i].tid), NULL, testPThreadFunc, (void *)&(args[i])) != 0) {
-	    perror("create_bound_thread");
+	    perror("pthread_create");
 	    exit(-1);
       }
     }

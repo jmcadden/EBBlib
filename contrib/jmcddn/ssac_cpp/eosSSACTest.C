@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <math.h>
 
 #include "EBBKludge.H"
 
@@ -145,8 +146,8 @@ SSACTest::work(int myid)
   EBBRC rc;
   intptr_t v;
 
-  readCount = (1-writePct) * numEvents;
-  writeCount = writePct * numEvents;
+  readCount = (int)floor((1-writePct) * numEvents);
+  writeCount = (int)floor(writePct * numEvents);
 
   for (int j=0; j<1;j++) {
     // write to SSAC data object (increase pointer by 1)
@@ -211,7 +212,7 @@ main(int argc, char **argv)
 {
   int n=4; // thread count
   int m=1; // no. of iterations
-  bool p=1; // bind threads?
+  bool p=0; // bind threads?
   double w=0.5; // test read/write percentage
   int c=1000; // test event no
 

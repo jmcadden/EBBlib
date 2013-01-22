@@ -4,6 +4,9 @@ src = eosSSACTest.C $(classes)
 objs = $(patsubst %.C,%.o,$(src))
 libs = -lpthread 
 CXXFLAGS=-g -O0 -Wall
+CXX=g++
+CNK_CXXFLAGS=-D_BG_ -g -O0 -Wall -I/bgsys/drivers/ppcfloor/arch/include
+CNK_CXX=mpicxx
 
 all: eosSSACTest
 
@@ -11,16 +14,19 @@ all: eosSSACTest
 
 # compile and generate dependency info
 %.o: %.C
-	g++ -c $(CXXFLAGS) $*.C -o $*.o
-	g++ -MM $(CXXFLAGS) $*.C > $*.d
+	${CXX} -c $(CXXFLAGS) $*.C -o $*.o 
+	${CXX} -MM $(CXXFLAGS) $*.C > $*.d 
 
 eosSSACTest.o: Test.H 
 
 eosSSACTest: $(objs) $(hdrs)
-	g++ ${CXXFLAGS} $(objs) $(libs) -o eosSSACTest 
+	${CXX} ${CXXFLAGS} $(objs) $(libs) -o eosSSACTest 
+
+cnk: $(objs) $(hdrs)
+	${CNK_CXX} ${CNK_CXXFLAGS} $(objs) $(libs) -o eosSSACTest_cnk
 
 clean:
-	rm -f *.o *.d eosSSACTest
+	rm -f *.o *.d eosSSACTest eosSSACTest_cnk
 
 
 

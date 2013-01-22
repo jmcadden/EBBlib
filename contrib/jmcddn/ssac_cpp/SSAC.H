@@ -8,7 +8,7 @@ typedef SSAC *SSACId;
 typedef SSAC **SSACId;
 #endif
 
-#define DOTRACE 1
+#define DOTRACE 0
 #undef NOLOCKSNOFLAGSNOCOUNTERS
 
 typedef void *CacheObjectDataSimple;
@@ -19,6 +19,8 @@ public:
   virtual int valid()=0;
   virtual CacheObjectDataSimple load()=0;
   virtual EBBRC save(CacheObjectDataSimple data)=0;
+  virtual ~CacheObjectId(){};
+
 };
 
 // Here to provided base type for Cache Entries
@@ -34,9 +36,8 @@ public:
   virtual EBBRC putback( CacheEntry* &ce, const putflag &flag )=0;
   virtual EBBRC flush()=0;
   virtual EBBRC snapshot()=0;
+  virtual ~SSAC(){};
 };
 #endif
-
-
 
 
