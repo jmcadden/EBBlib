@@ -43,8 +43,7 @@ class Barrier {
   volatile int leaveCount;
   void reset() { enterCount = leaveCount = size; }
   void leave() {
-    // XXX: NOT WORKING ON BG!
-      //__sync_sub_and_fetch(&leaveCount, 1);
+     __sync_sub_and_fetch(&leaveCount, 1);
      if (leaveCount == 0 ) reset();  // last one to leave resets barrier
   }
 public:
@@ -53,8 +52,7 @@ public:
   Barrier(int val)  { init(val); }
   int enter() {
     while(leaveCount != size); // ensure barrier is empty for reuse
-    // XXX: NOT WORKING ON BG!
-    //__sync_sub_and_fetch(&enterCount, 1);
+    __sync_sub_and_fetch(&enterCount, 1);
     while (enterCount != 0); // FIXME: better-than-spinwait
     leave();
     return 0;
@@ -64,7 +62,7 @@ public:
 class Test;
 typedef Test **TestId;
 
-class Test:CPlusEBB {
+class Test: protected CPlusEBB {
   static int num_psy_cores(void);
   friend void *testPThreadFunc(void *);
 #ifndef __APPLE__

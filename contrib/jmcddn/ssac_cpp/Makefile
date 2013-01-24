@@ -7,8 +7,7 @@ libs = -lpthread -lm
 CXXFLAGS=-g -O0 -Wall
 CXX=g++
 CNK_CXXFLAGS=-D_BG_ -I. -I/bgsys/drivers/ppcfloor/arch/include
-#CNK_CXX=mpixlcxx_r
-CNK_CXX=mpicxx-4.3.2
+CNK_CXX=mpicxx
 
 all: cnk
 
@@ -24,11 +23,22 @@ std: $(std_objs) $(hdrs)
 cnk: $(cnk_objs) $(hdrs)
 	${CNK_CXX} ${CNK_CXXFLAGS} $(cnk_objs) $(libs) -o eosSSACTest_cnk
 
+mini: 
+	${CNK_CXX} mini.C ${CNK_CXXFLAGS} $(libs) -o mini_cnk
+
+minid: 
+	${CXX} mini.C ${CXXFLAGS} $(libs) -o mini
+
 runbg: 
 	qsub -q default -A I12_faultOblivious -n 10 -t 15 eosSSACTest_cnk
+	qstat
+
+runmini: 
+	qsub -q default -A I12_faultOblivious -n 10 -t 15 mini_cnk
+	qstat
 
 clean:
-	rm -f *.o *.d eosSSACTest eosSSACTest_cnk *.cobaltlog *.error *.output
+	rm -f *.o *.d eosSSACTest eosSSACTest_cnk *.cobaltlog *.error *.output mini mini_cnk
 
 
 
