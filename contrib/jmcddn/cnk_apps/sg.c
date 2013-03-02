@@ -104,6 +104,8 @@ DMA_settrack(unsigned int track, int len, void* buff)
 {
   //TODO: assert track >= 0 && track < SG_TRACKS - 1
   //TODO assert track enabled
+  DMA_CounterSetDisableById( &sg_inj_grp, track);
+  DMA_CounterSetDisableById( &sg_rec_grp, track);
   DMA_CounterSetBaseById(   &sg_inj_grp, track, buff);
   DMA_CounterSetMaxById(    &sg_inj_grp, track, buff+len);
   DMA_CounterSetValueById(  &sg_inj_grp, track, len);
@@ -111,6 +113,8 @@ DMA_settrack(unsigned int track, int len, void* buff)
   DMA_CounterSetMaxById(    &sg_rec_grp, track, buff+len);
   DMA_CounterSetValueById(  &sg_rec_grp, track, len);
  
+      DMA_CounterSetEnableById( &sg_inj_grp, track);
+      DMA_CounterSetEnableById( &sg_rec_grp, track);
   return 0; 
 }
 
@@ -153,13 +157,9 @@ DMA_config_dump(void){
 }
 
 
-
-
-
-
-
-/* Gather vector IO reads 
- * Return the amount read in
+/* Blocking read across IO vector 
+ *
+ * return: amount read in
  *
  * */
 unsigned int
@@ -187,7 +187,7 @@ DMA_readv(void* in, DMA_iovec *iov, int iovcnt)
   // this should already exist
   // char rdma_read_data[count] __attribute__ ((aligned(32)));
 
-  int freetrack = 8; //TODO: lookup free track!! 
+ int freetrack =  DMA_gettrack();
 
   // new reception counter
   DMA_CounterSetBaseById(   &sg_rec_grp, freetrack, in);
@@ -195,7 +195,7 @@ DMA_readv(void* in, DMA_iovec *iov, int iovcnt)
   DMA_CounterSetValueById(  &sg_rec_grp, freetrack, count);
   DMA_CounterSetEnableById( &sg_rec_grp, freetrack);
 
-  orig = newv = DMA_check_rec(8);
+  orig = newv = DMA_check_rec(freetrack);
   // for each iov, issue a direct put msg
   for( i=0; i<iovcnt; i++)
   {
@@ -240,14 +240,19 @@ DMA_readv(void* in, DMA_iovec *iov, int iovcnt)
   }
   // **********************************************
 
-  // spin until we've read data 
+  // spin until we've read all the data
 
   while( DMA_check_rec(freetrack) == count)
     ; 
 
-  return 0;
+  return count;
 }
 
+/* Async write out across IO vector 
+ *
+ * return: amount written out
+ *
+ * */
 unsigned int
 DMA_writev(void *fd, DMA_iovec *iov, int iovcnt)
 {
@@ -278,9 +283,7 @@ DMA_writev(void *fd, DMA_iovec *iov, int iovcnt)
       perror("DMA_InjFifoInjectDescriptorById");
 
     while(orig == newv)
-    {
       newv = DMA_CounterGetValueById(&sg_inj_grp, 0);
-    }
   }
   
   return 0;

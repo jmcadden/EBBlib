@@ -18,6 +18,7 @@ int
 main (void){
  
   int i, orig, newv;
+  int track;
   _BGP_Personality_t ps;
   uint32_t rank, blocksize;
 
@@ -32,8 +33,9 @@ main (void){
 
   // init scatter-gather
   DMA_sginit(rank);
-  DMA_settrack(0, blocksize*sizeof(uint32_t), buf); 
-  //printf("#%d/%d finished init\n",rank, blocksize);
+  track = DMA_gettrack();
+  DMA_settrack(track, blocksize*sizeof(uint32_t), buf); 
+  printf("#%d/%d tk:%d finished init\n",rank, blocksize, track);
 
   orig = newv = DMA_check_rec(0);
 
@@ -46,15 +48,15 @@ main (void){
   {
     while(1){
 
-//      while(orig == newv)
-//      { newv = DMA_check_rec(0); }
-//
-//      printf("%d:", rank); 
-//      for(i=0; i<blocksize; i++)
-//        printf("%d,",buf[i]); 
-//      printf("\n"); 
-//
-//      orig = newv = DMA_check_rec(0);
+      while(orig == newv)
+      { newv = DMA_check_rec(0); }
+
+      printf("%d:", rank); 
+      for(i=0; i<blocksize; i++)
+        printf("%d,",buf[i]); 
+      printf("\n"); 
+
+      orig = newv = DMA_check_rec(0);
 
       GlobInt_Barrier(0, NULL, NULL);
     }
@@ -71,7 +73,7 @@ main (void){
   
     // create IO vector
     for(i=0; i<blocksize; i++)
-      DMA_sg_setvec( &iovec[i], i+1, 0, 4, (i+1)*4);
+      DMA_sg_setvec( &iovec[i], i+1, track, 4, (i+1)*4);
 
     DMA_writev(buf, iovec, blocksize-1);
 
