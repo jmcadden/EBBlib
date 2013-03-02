@@ -6,14 +6,20 @@
 #include "EBBKludge.H"
 #include "Test.H"
 #include "SSACSimpleSharedArray.H"
+#ifndef _CNK_
+#include "SSACSimplePartitionedArray.H"
+#else
+#include <bpcore/bgp_atomic_ops.h>         /*alternative compare and swap */
+#include <spi/bgp_SPI.h>
+#endif
 
-#define NODE_COUNT        1
-#define CORE_COUNT        3
-#define BIND_THREADS      0
-#define TEST_ITERATIONS   1
+/* Test Defaults */
+#define CORE_COUNT        3     //FIXME: only 3 workers on cnk 
+#define BIND_THREADS      0     /* explicit binding off */
+#define TEST_ITERATIONS   1        
 #define TEST_EVENTS       100
 #define RW_RATIO          0.5
-#define HASHTABLESIZE     8192 //this is the number of hash queues, each with a fixed associativity
+#define HASHTABLESIZE     8192  // FIXME: this is the number of hash queues, each with a fixed associativity (default:4)
 
 class SSACTest : public Test {
   protected:

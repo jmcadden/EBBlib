@@ -57,8 +57,10 @@ EBB_init_default( )
   LRT_RCAssert(rc);
 
 #ifdef ARCH_PPC
+#if LRT_BARE
   rc = IOMgrPrimImpInit();
   LRT_RCAssert(rc);
+#endif
 #endif
 }
 

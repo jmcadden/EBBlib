@@ -221,7 +221,7 @@ atomic_add_and_fetch8 (volatile uint8_t *ptr, uint8_t val)
   uint32_t tmp;
 
   __asm__ ("\n"
-      "# _FetchAndAdd32						\n"
+      "# _FetchAndAdd8						\n"
       "	lwarx	%1,0,%4		# oval = (*ptr)	[linked]	\n"
       " stb %1,0(0) \n"
       " stb %3,0(9) \n"
@@ -229,7 +229,7 @@ atomic_add_and_fetch8 (volatile uint8_t *ptr, uint8_t val)
       "#add	%2,%1,%3	# tmp = oval + val		\n"
       "	stwcx.	%2,0,%4		# (*ptr) = tmp	[conditional]	\n"
       "	bne-	$-12		# if (store failed) retry	\n"
-      "# end _FetchAndAdd32						\n"
+      "# end _FetchAndAdd8						\n"
       : "=m" (*(char*)ptr), "=&r" (oval), "=&r" (tmp)
       : "r" (val), "r" (ptr), "m" (*(char*)ptr)
       : "cc"

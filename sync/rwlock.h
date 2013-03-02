@@ -29,85 +29,115 @@
 
 #define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
 
+/* Simple Reader-Writer Lock 
+ *
+ * A simple reader-writer lock thats allows for concurrent reads and mutually
+ * exclusive writes. Writer starvation is circomvented by prevening readers
+ * from prempting a pending write. 
+ *
+ * All writers race for the lock. We do not currently prioritize by arrival time.   
+ *
+ * */
 typedef union rwlock
 {
-  uint32_t val;
-  uint16_t val16;
+  uint32_t raw;
+  /* writers */
   struct {
-    uint8_t write;
-    uint8_t read;
-    uint8_t users;
+    union {
+      uint16_t raw;
+      struct {
+        uint8_t flag; /* active flag */
+        uint8_t wait;  /* writer wait counter - try to avoid write starvation */
+      };
+    }writers;
+  /* readers */
+    union {
+      uint16_t raw;
+      struct {
+        uint8_t flag; /* active flag */
+        /* XXX: unpredicted behaviour with >256 simultaneous readers */
+        uint8_t count; /* reader count */
+      };
+    }readers;
   };
 } rwlock;
 
+/* Initialize Lock */
 static inline void
 rwlock_init(rwlock *l)
 {
-  l->val = 0;
+  l->raw = 0; /* clear flags & count */
   atomic_synchronize();
 }
 
+/* Writer Acquire */
 static inline void
 rwlock_wrlock(rwlock *l)
 {
-  rwlock temp;
-  temp.val = 0;
-  temp.users = 1;
-
-  //Atomically acquire a ticket and increment the count
-  unsigned me = atomic_fetch_and_add32(&l->val, temp.val);
-
-  temp.val = me;
-  uint8_t val = temp.users;
-
-  //wait until the write queue has our ticket number
-  while (ACCESS_ONCE(l->write) != val)
+  rwlock lsnap, lnew;
+  atomic_synchronize();
+  do{
     cpu_relax();
+    lsnap = lnew = *l; /* transient snapshots of lock*/
+    /* acquire lock if there are no current reader or writers.
+     * disregard waiting flag... snooze you loose.
+     */
+    if (lnew.readers.raw == 0 && lnew.writers.raw == lnew.writers.wait)
+      lnew.writers.flag = 1;
+    else if (lnew.writers.wait == 0) /* set wait count */
+      lnew.writers.wait += 1; 
+
+    /* If we made a write, try and commit it. Else, we try again. */
+  }while(!(lnew.raw != lsnap.raw && atomic_bool_compare_and_swap32(&l->raw, lsnap.raw, lnew.raw)));
 }
 
+/* Writer Release */ 
 static inline void
 rwlock_wrunlock(rwlock *l)
 {
-  rwlock temp;
-  temp.val = ACCESS_ONCE(l->val);
-
+  rwlock lsnap, lnew;
   atomic_synchronize();
-
-  temp.write++;
-  temp.read++;
-
-  //we atomically increment the reader and writer queue numbers to let
-  //the next user through whether they are a reader or a writer
-  l->val16 = temp.val16;
+  do{
+    cpu_relax();
+    lsnap = lnew = *l; /* transient snapshots of lock*/
+    /* acquire lock if there are no writers (include those waiting.) */
+    lnew.writers.flag = 0;
+    lnew.writers.wait += -1; 
+    /* If we made a write, try and commit it. Else, we try again. */
+  }while(!atomic_bool_compare_and_swap32(&l->raw, lsnap.raw, lnew.raw));
 }
 
+/* Reader Acquire */
 static inline void
 rwlock_rdlock(rwlock *l)
 {
-  rwlock temp;
-  temp.val = 0;
-  temp.users = 1;
-
-  //Atomically acquire a ticket and increment the count
-  unsigned me = atomic_fetch_and_add32(&l->val, temp.val);
-
-  temp.val = me;
-  uint8_t val = temp.users;
-
-  //Wait until the read queue has our ticket number
-  while (ACCESS_ONCE(l->read) != val)
+  rwlock lsnap, lnew;
+  atomic_synchronize();
+  do{
     cpu_relax();
-
-  //We have the read lock, let the next user through if they are a reader
-  l->read++;
+    lsnap = lnew = *l; /* transient snapshots of lock*/
+    /* acquire lock if there are no writers (include those waiting.) */
+    if (lnew.writers.raw == 0)
+      lnew.readers.flag = 1; lnew.readers.count += 1;
+    /* If we made a write, try and commit it. Else, we try again. */
+  }while(!(lnew.raw != lsnap.raw && atomic_bool_compare_and_swap32(&l->raw, lsnap.raw, lnew.raw)));
 }
 
+/* Reader Release */
 static inline void
 rwlock_rdunlock(rwlock *l)
 {
-  //we increment the write queue so if the next user is a writer,
-  //they get through once all readers unlock
-  atomic_add_and_fetch8(&l->write, 1);
+  rwlock lsnap, lnew;
+  atomic_synchronize();
+  do{
+    cpu_relax();
+    lsnap = lnew = *l; /* transient snapshots of lock*/
+    /* acquire lock if there are no writers (include those waiting.) */
+    if(lnew.readers.count == 1)
+      lnew.readers.raw = 0;
+    else
+      lnew.readers.count += -1; 
+    /* If we made a write, try and commit it. Else, we try again. */
+  }while(!(lnew.raw != lsnap.raw && atomic_bool_compare_and_swap32(&l->raw, lsnap.raw, lnew.raw)));
 }
-
 #endif

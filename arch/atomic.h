@@ -32,34 +32,4 @@
 #include <arch/powerpc/atomic.h>
 #endif
 
-#if 0
-
-// GCC standard atomic calls
-type __sync_fetch_and_add (type *ptr, type value, ...)
-type __sync_fetch_and_sub (type *ptr, type value, ...)
-type __sync_fetch_and_or (type *ptr, type value, ...)
-type __sync_fetch_and_and (type *ptr, type value, ...)
-type __sync_fetch_and_xor (type *ptr, type value, ...)
-type __sync_fetch_and_nand (type *ptr, type value, ...)
-    These builtins perform the operation suggested by the name, and returns the value that had previously been in memory. That is,
-              { tmp = *ptr; *ptr op= value; return tmp; }
-              { tmp = *ptr; *ptr = ~tmp & value; return tmp; }   // nand
-type __sync_add_and_fetch (type *ptr, type value, ...)
-type __sync_sub_and_fetch (type *ptr, type value, ...)
-type __sync_or_and_fetch (type *ptr, type value, ...)
-type __sync_and_and_fetch (type *ptr, type value, ...)
-type __sync_xor_and_fetch (type *ptr, type value, ...)
-type __sync_nand_and_fetch (type *ptr, type value, ...)
-    These builtins perform the operation suggested by the name, and return the new value. That is,
-              { *ptr op= value; return *ptr; }
-              { *ptr = ~*ptr & value; return *ptr; }   // nand
-bool __sync_bool_compare_and_swap (type *ptr, type oldval type newval, ...)
-type __sync_val_compare_and_swap (type *ptr, type oldval type newval, ...)
-    These builtins perform an atomic compare and swap. That is, if the current value of *ptr is oldval, then write newval into *ptr.
-    The “bool” version returns true if the comparison is successful and newval was written. The “val” version returns the contents of *ptr before the operation.
-__sync_synchronize (...)
-    This builtin issues a full memory barrier.
-
-
-#endif 
 #endif

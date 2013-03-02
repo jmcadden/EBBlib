@@ -211,7 +211,7 @@ main(int argc, char **argv)
 {
   int n=4; // thread count
   int m=1; // no. of iterations
-  bool p=1; // bind threads?
+  bool p=0; // bind threads?
   double w=0.5; // test read/write percentage
   int c=1000; // test event no
 

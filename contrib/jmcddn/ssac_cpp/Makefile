@@ -1,4 +1,4 @@
-classes = SSACSimpleSharedArray.C CacheSimple.C Test.C 
+classes = SSACSimpleSharedArray.C CacheSimple.C Test.C SSACSimplePartitionedArray.C
 hdrs = $(patsubst %.c,%.h,$(classes))
 src = eosSSACTest.C $(classes)
 std_objs = $(patsubst %.C,%_std.o,$(src))
@@ -6,8 +6,9 @@ cnk_objs = $(patsubst %.C,%_cnk.o,$(src))
 libs = -lpthread -lm
 CXXFLAGS=-g -O0 -Wall
 CXX=g++
-CNK_CXXFLAGS=-D_BG_ -I. -I/bgsys/drivers/ppcfloor/arch/include
+CNK_CXXFLAGS=-D_CNK_ -O0  -I. -I/bgsys/drivers/ppcfloor/arch/include
 CNK_CXX=mpicxx
+PROJ=OS_Exascale
 
 all: cnk
 
@@ -23,18 +24,26 @@ std: $(std_objs) $(hdrs)
 cnk: $(cnk_objs) $(hdrs)
 	${CNK_CXX} ${CNK_CXXFLAGS} $(cnk_objs) $(libs) -o eosSSACTest_cnk
 
-mini: 
+mini: mini.C
 	${CNK_CXX} mini.C ${CNK_CXXFLAGS} $(libs) -o mini_cnk
 
-minid: 
-	${CXX} mini.C ${CXXFLAGS} $(libs) -o mini
+mini2: mini2.c 
+	${CNK_CXX} mini2.c ${CNK_CXXFLAGS} $(libs) -o mini2_cnk
 
 runbg: 
-	qsub -q default -A I12_faultOblivious -n 10 -t 15 eosSSACTest_cnk
+	qsub -q default -A ${PROJ} -n 16 -t 15 eosSSACTest_cnk
 	qstat
 
 runmini: 
-	qsub -q default -A I12_faultOblivious -n 10 -t 15 mini_cnk
+	make clean
+	make mini
+	qsub -q default -A ${PROJ} -n 16 -t 15 mini_cnk
+	qstat
+
+runmini2: 
+	make clean
+	make mini2
+	qsub -q default -A ${PROJ} -n 16 -t 5 mini2_cnk
 	qstat
 
 clean:

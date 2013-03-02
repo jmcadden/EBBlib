@@ -88,7 +88,7 @@ linux_thread_init(void *arg)
 int
 create_bound_thread(pthread_t *tid, int id,  void *(*func)(void *), void *arg)
 {
-    int numcores, pid, rc;
+  int numcores, pid, rc;
   numcores = num_phys_cores();
   pid = id % numcores;
   printf("numcores=%d pid=%d\n", numcores, pid);

@@ -22,6 +22,8 @@
  * THE SOFTWARE.
  */
 
+#if LRT_BARE
 extern EBBRC IOMgrPrimImpInit(void);
+#endif
 
 #endif

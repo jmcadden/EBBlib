@@ -180,8 +180,7 @@ EventMgrPrimImpInit(void)
   EBBRC rc;
   static CObjEBBRootMultiImpRef rootRef;
 
-  if (atomic_bool_compare_and_swap(&theEventMgrPrimId, (EventMgrPrimId)0,
-                                   (EventMgrPrimId)-1)) {
+  if (atomic_bool_compare_and_swap((uintptr_t *)&theEventMgrPrimId,0,-1)) {
     EBBId id;
      rc = CObjEBBRootMultiImpCreate(&rootRef, EventMgrPrimImp_createRep);
     LRT_RCAssert(rc);
