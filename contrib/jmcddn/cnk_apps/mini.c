@@ -47,15 +47,16 @@ global_barrier(void)
 /* dump of counter status - groups free */
 void
 print_global_counter_status(DMA_Type_t type){
+  int i,j;
   int t1;
   int t2[DMA_NUM_COUNTERS_PER_SUBGROUP];
   printf("Counter Type %d Status\n", type);
-  for(int i=0; i<DMA_NUM_COUNTER_GROUPS; i++){
+  for(i=0; i<DMA_NUM_COUNTER_GROUPS; i++){
     t1=0;
     if( DMA_CounterGroupQueryFree(type, i, &t1, &t2[0]) != 0)
       perror("DMA_CounterGroupQueryFree");
     printf("Group #%d has %d subgroups free:", i, t1);
-    for(int j=0; j<t1; j++)
+    for(j=0; j<t1; j++)
       printf("%d,",t2[j]);
     printf("\n");
   }
@@ -322,7 +323,7 @@ main()
   /* simple dma test*/
   if(rank == 1) {
     printf("sanity rec: %d %d\n", orig, newv);
-    for(int i=0; i < 4*QUAD; i++)
+    for( i=0; i < 4*QUAD; i++)
       printf("%d",data[i]); 
     printf("\n"); 
 
@@ -330,14 +331,14 @@ main()
     { newv = DMA_CounterGetValueById(&rec_grp, 0); }
 
     printf("receive complete!\n");
-    for(int i=0; i < 4*QUAD; i++)
+    for( i=0; i < 4*QUAD; i++)
       printf("%d",data[i]); 
 
     printf("\n"); 
     
   } else {
     dma_send(1); // send to rank=1
-    _bgp_Delay(3000000);
+    //_bgp_Delay(3000000);
     // send complete, let's do a pull from another node
     dma_read(2);
 
@@ -345,7 +346,7 @@ main()
     { newv = DMA_CounterGetValueById(&rec_grp, 0); }
 
     printf("RDMA read complete!\n");
-    for(int i=0; i < 4*QUAD; i++)
+    for( i=0; i < 4*QUAD; i++)
       printf("%d",data[i]); 
 
     printf("\n"); 

@@ -8,7 +8,7 @@
 // COUNTERS
 #define SG_CTR_GRP          3
 #define SG_CTR_SGRP_COUNT   1
-#define SG_TRACKS           SG_CTR_SGRP_COUNT * 8
+#define SG_TRACKS           (SG_CTR_SGRP_COUNT * 8)
 
 typedef struct DMA_iovec_s {
   unsigned int dst_rank;
@@ -25,11 +25,13 @@ unsigned int
 DMA_sginit(uint32_t myrank);
 
 unsigned int
+DMA_sg_setvec( DMA_iovec *ivo, uint32_t rank,  uint32_t track, uint32_t len, uint32_t offset);
+
+unsigned int
 DMA_readv(void* in, DMA_iovec *iov, int iovcnt);
 
 unsigned int
 DMA_writev(void* in, DMA_iovec *iov, int iovcnt);
-
 
 unsigned int
 DMA_check_rec(int track);

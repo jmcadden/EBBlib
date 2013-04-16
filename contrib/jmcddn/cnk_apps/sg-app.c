@@ -13,6 +13,12 @@
 #define QUADWORD QUAD * 4
 #define BUFFERLEN QUADWORD
 
+#define PSIZE 1024
+
+uintptr_t mem[PSIZE] __attribute__ ((aligned(QUAD)));
+uint32_t myid;
+
+
 
 int
 main (void){

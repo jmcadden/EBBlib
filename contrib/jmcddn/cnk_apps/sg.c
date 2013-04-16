@@ -14,7 +14,7 @@ DMA_InjFifoGroup_t  sg_inj_fifo_grp, sg_rec_fifo_grp;
 DMA_CounterGroup_t  sg_inj_grp, sg_rec_grp;
 static char inj_fifo_data[DMA_MIN_INJ_FIFO_SIZE_IN_BYTES] __attribute__ ((aligned(32)));
 
-uint32_t rank;
+uint32_t sg_rank;
   
 
 /* Init DMA fifos, counters and buffers for scatter-gather */
@@ -32,7 +32,7 @@ DMA_sginit(uint32_t myrank)
   unsigned short locals[1] = {0}; // 0 = non-local
   unsigned char inj_map[1] = {0xFF}; // all hw fifos
 
-  rank = myrank; //FIXME, this is sloppy
+  sg_rank = myrank; //FIXME, this is sloppy
 
   // Injection FIFO group
   if( DMA_InjFifoGroupAllocate( 
@@ -51,7 +51,7 @@ DMA_sginit(uint32_t myrank)
     perror("DMA_InjFifoInitById  \n");
   }
 
-  // Allocate Injection and Reception counters for scatter-gather
+  //COUNTERS:  Allocate Injection and Reception counters for scatter-gather
   int sg[SG_CTR_SGRP_COUNT];
   for( i=0; i<SG_CTR_SGRP_COUNT; i++)
     sg[i] = i; 
@@ -65,7 +65,7 @@ DMA_sginit(uint32_t myrank)
     perror("DMA_CounterGroupAllocate");
 
   if( DMA_CounterGroupAllocate(DMA_Type_Reception,
-        SG_CTR_GRP, 2, sg,                   /* group#, sgroups count, sgroup list */ 
+        SG_CTR_GRP, SG_CTR_SGRP_COUNT, sg,                   /* group#, sgroups count, sgroup list */ 
         0, NULL, NULL,                       /* interrupts*/         
         (Kernel_InterruptGroup_t) 0,       
         &sg_rec_grp                       
@@ -112,9 +112,8 @@ DMA_settrack(unsigned int track, int len, void* buff)
   DMA_CounterSetBaseById(   &sg_rec_grp, track, buff);
   DMA_CounterSetMaxById(    &sg_rec_grp, track, buff+len);
   DMA_CounterSetValueById(  &sg_rec_grp, track, len);
- 
-      DMA_CounterSetEnableById( &sg_inj_grp, track);
-      DMA_CounterSetEnableById( &sg_rec_grp, track);
+  DMA_CounterSetEnableById( &sg_inj_grp, track);
+  DMA_CounterSetEnableById( &sg_rec_grp, track);
   return 0; 
 }
 
@@ -124,7 +123,7 @@ DMA_sg_setvec( DMA_iovec *ivo, uint32_t rank,  uint32_t track, uint32_t len, uin
 {
   ivo->dst_rank = rank; 
   ivo->dst_ctr_grp = SG_CTR_GRP;
-  ivo->track = track; // 0-7
+  ivo->track = track; 
   ivo->offset = offset; 
   ivo->buf_len = len; // amount of data to send
   return 0;
@@ -165,6 +164,9 @@ DMA_config_dump(void){
 unsigned int
 DMA_readv(void* in, DMA_iovec *iov, int iovcnt)
 {
+  
+  // TODO: alligned malloc, return pointer
+
   int orig, newv, i;
   uint32_t nextx, nexty, nextz, nextt;
   uint32_t selfx, selfy, selfz, selft;
@@ -172,42 +174,38 @@ DMA_readv(void* in, DMA_iovec *iov, int iovcnt)
   DMA_InjDescriptor_t payload __attribute__ ((aligned(32)));
   DMA_InjDescriptor_t request;
   int offset, count;
-
   count = offset = 0;
 
   // get total amount to send 
   for( i=0; i<iovcnt; i++)
     count += iov[i].buf_len;
   
-  printf("sanity: total send calculated  %d \n", count);
-
-  if (Kernel_Rank2Coord(rank, &selfx, &selfy, &selfz, &selft) != 0)
+  if (Kernel_Rank2Coord(sg_rank, &selfx, &selfy, &selfz, &selft) != 0)
     printf("Kernal_Ranks2Coords\n");
 
-  // this should already exist
-  // char rdma_read_data[count] __attribute__ ((aligned(32)));
-
- int freetrack =  DMA_gettrack();
-
-  // new reception counter
+// new transfer counter
+  int freetrack =  DMA_gettrack();
   DMA_CounterSetBaseById(   &sg_rec_grp, freetrack, in);
   DMA_CounterSetMaxById(    &sg_rec_grp, freetrack, in+count);
   DMA_CounterSetValueById(  &sg_rec_grp, freetrack, count);
   DMA_CounterSetEnableById( &sg_rec_grp, freetrack);
 
+  // get counter value
   orig = newv = DMA_check_rec(freetrack);
-  // for each iov, issue a direct put msg
+  
+  // for each location in vector, issue a DirectPut request
   for( i=0; i<iovcnt; i++)
   {
     if (Kernel_Rank2Coord(iov[i].dst_rank, &nextx, &nexty, &nextz, &nextt) != 0)
       printf("Kernal_Ranks2Coords\n");
-    printf("Attempting DMA read from rank %d \n", iov[i].dst_rank, nextx, nexty, nextz);
+
+     printf("%d: Attemp %db read from rank %d t: %d->%d \n", sg_rank, orig, iov[i].dst_rank, freetrack, iov[i].track);
 
     if( DMA_TorusDirectPutDescriptor(&payload,
         selfx, selfy, selfz, 0, 0,  
         SG_CTR_GRP, iov[i].track, iov[i].offset,   /* dest injection counter*/
-        SG_CTR_GRP, freetrack, offset,        /* my reception counter */
-        iov[i].buf_len                /* dma len */
+        SG_CTR_GRP, freetrack, offset,             /* my reception counter */
+        iov[i].buf_len                             /* dma len */
         ) != 0)
       perror("DMA_TorusDirectPutDescriptor\n");
 
@@ -239,11 +237,11 @@ DMA_readv(void* in, DMA_iovec *iov, int iovcnt)
       offset += iov[i].buf_len; // increase read offset
   }
   // **********************************************
-
-  // spin until we've read all the data
-
-  while( DMA_check_rec(freetrack) == count)
-    ; 
+  //
+  // spin until we've read in expected data
+ 
+ while( newv == orig )
+   newv = DMA_check_rec(freetrack);
 
   return count;
 }
@@ -285,7 +283,7 @@ DMA_writev(void *fd, DMA_iovec *iov, int iovcnt)
     while(orig == newv)
       newv = DMA_CounterGetValueById(&sg_inj_grp, 0);
   }
-  
+
   return 0;
 }
 
