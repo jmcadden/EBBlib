@@ -13,6 +13,7 @@
 DMA_InjFifoGroup_t  sg_inj_fifo_grp, sg_rec_fifo_grp;
 DMA_CounterGroup_t  sg_inj_grp, sg_rec_grp;
 static char inj_fifo_data[DMA_MIN_INJ_FIFO_SIZE_IN_BYTES] __attribute__ ((aligned(32)));
+static char inj_fifo_secondary[DMA_MIN_INJ_FIFO_SIZE_IN_BYTES] __attribute__ ((aligned(32)));
 
 uint32_t sg_rank;
   
@@ -26,28 +27,31 @@ DMA_sginit(uint32_t myrank)
   Kernel_CommThreadHandler  null_handle = NULL;
 
   // Injection Fifo Config
-  // Note: fifo count fixed at 1 
-  int fifo_ids[1] = {0}; 
-  unsigned short priorities[1] = {0};
-  unsigned short locals[1] = {0}; // 0 = non-local
-  unsigned char inj_map[1] = {0xFF}; // all hw fifos
+  // Note: fifo count fixed at 2 
+  int fifo_ids[2] = {0,1}; 
+  unsigned short priorities[2] = {0,0};
+  unsigned short locals[2] = {0,0}; // 0 = non-local
+  unsigned char inj_map[2] = {0xFF, 0xFF}; // all hw fifos
 
   sg_rank = myrank; //FIXME, this is sloppy
 
-  // Injection FIFO group
+  //FIFOS: Injection FIFO group
   if( DMA_InjFifoGroupAllocate( 
-        SG_FIFO_GRP, 1, /* group num, fifo count */
+        SG_FIFO_GRP, 2, /* group num, fifo count */
         fifo_ids, priorities, locals, inj_map,                          
-        NULL,NULL,                             
-        (Kernel_InterruptGroup_t) 0,
-        NULL,NULL,
-        &sg_inj_fifo_grp) != 0)
+        NULL,NULL,(Kernel_InterruptGroup_t) 0,
+        NULL,NULL, &sg_inj_fifo_grp) != 0)
     perror("DMA_InjFifoGroupAllocate  remote\n");
 
-  // Initialize and activate fifo 
+  // Initialize and activate fifos
   if (DMA_InjFifoInitById(
         &sg_inj_fifo_grp, 0, inj_fifo_data, inj_fifo_data, 
         inj_fifo_data + DMA_MIN_INJ_FIFO_SIZE_IN_BYTES) != 0) {
+    perror("DMA_InjFifoInitById  \n");
+  }
+  if (DMA_InjFifoInitById(
+        &sg_inj_fifo_grp, 1, inj_fifo_secondary, inj_fifo_secondary, 
+        inj_fifo_secondary + DMA_MIN_INJ_FIFO_SIZE_IN_BYTES) != 0) {
     perror("DMA_InjFifoInitById  \n");
   }
 
@@ -176,10 +180,11 @@ DMA_readv(void* in, DMA_iovec *iov, int iovcnt)
   int offset, count;
   count = offset = 0;
 
-  // get total amount to send 
+  // compute the total amount to send 
   for( i=0; i<iovcnt; i++)
     count += iov[i].buf_len;
   
+  // TODO: move self ranks into a global init?
   if (Kernel_Rank2Coord(sg_rank, &selfx, &selfy, &selfz, &selft) != 0)
     printf("Kernal_Ranks2Coords\n");
 
@@ -190,7 +195,7 @@ DMA_readv(void* in, DMA_iovec *iov, int iovcnt)
   DMA_CounterSetValueById(  &sg_rec_grp, freetrack, count);
   DMA_CounterSetEnableById( &sg_rec_grp, freetrack);
 
-  // get counter value
+  // get our set counter value
   orig = newv = DMA_check_rec(freetrack);
   
   // for each location in vector, issue a DirectPut request
@@ -223,11 +228,11 @@ DMA_readv(void* in, DMA_iovec *iov, int iovcnt)
       //max = DMA_CounterGetMaxById( &inj_grp, 0);
       //printf("sanity: inj_grp %d, %lx, %lx, %lx\n", val, addr,max,data);
       
-      // REMOTE GET
+      // Issue RemoteGet Request
       if( DMA_TorusRemoteGetDescriptor(&request,
             nextx, nexty, nextz, 0, 0,
-            SG_CTR_GRP, freetrack, 0,           /* my injection counter (for payload)*/
-            SG_FIFO_GRP, 0              /* dest inj fifo */
+            SG_CTR_GRP, freetrack, 0,    /* my injection counter (for payload)*/
+            SG_FIFO_GRP, 1              /* dest inj fifo */
             ) != 0)
         perror("DMA_TorusDirectPutDescriptor\n");
 

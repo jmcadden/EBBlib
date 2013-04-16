@@ -1,9 +1,6 @@
 // TESTS CONTROLS 
 #define P2P_LOCAL   0
 #define P2P_REMOTE  1
-#define TEST_C      0
-#define TEST_D      0
-
 #define VERBOSE     0
 //
 #include <stdio.h>
@@ -80,10 +77,12 @@ dmem_get(key k)
     return  dmem_base[off(k)];
   else
   {
-
     if(VERBOSE)
       printf("key %d remote read! %d -> %d \n", k, myid, home(k));
+
+    // fill in read location struct
     DMA_sg_setvec(&iovec, home(k), dmem_track, sizeof(val), off(k));
+    // make request (blocking)
     DMA_readv(&v, &iovec, 1);
   }
   return v;
@@ -148,7 +147,7 @@ if(P2P_REMOTE){
     
     if(myid == i)
     {
-      printf("%s #%d: running test 2 \n",__func__, myid);
+      printf("%s #%d: remote test \n",__func__, myid);
       v = dmem_get(nextloc * PSIZE);
       printf("%d: v=%d  %llu\n", myid, v);
     }
@@ -157,7 +156,7 @@ if(P2P_REMOTE){
   }
 
   if(VERBOSE)
-    printf("%s #%d: running test 2 \n",__func__, myid);
+    printf("%s #%d: remote test finished\n",__func__, myid);
   
 }
 

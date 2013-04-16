@@ -4,7 +4,6 @@ CPP=mpicc
 CXXFLAGS=-D_CNK_ -O0  -I. -I/bgsys/drivers/ppcfloor/arch/include
 ###
 DEPS= sg.c 
-
 ###
 HDRS = $(patsubst %.c,%.h,$(DEPS))
 OBJS = $(patsubst %.c,%.o,$(DEPS))
