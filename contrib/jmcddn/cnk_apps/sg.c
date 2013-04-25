@@ -1,3 +1,5 @@
+#define VERBOSE 1
+
 /* Torus Scatter Gather */
 #include<stdio.h>
 #include <stdlib.h>
@@ -104,7 +106,7 @@ DMA_freetrack(int track){
  *  XXX: buf must already be 16-bit aligned 
  */
 unsigned int
-DMA_settrack(unsigned int track, int len, void* buff)
+DMA_settrack(unsigned int track, unsigned int len, void* buff)
 {
   //TODO: assert track >= 0 && track < SG_TRACKS - 1
   //TODO assert track enabled
@@ -128,32 +130,34 @@ DMA_sg_setvec( DMA_iovec *ivo, uint32_t rank,  uint32_t track, uint32_t len, uin
   ivo->dst_rank = rank; 
   ivo->dst_ctr_grp = SG_CTR_GRP;
   ivo->track = track; 
-  ivo->offset = offset; 
   ivo->buf_len = len; // amount of data to send
+  ivo->offset = offset; // offset into region
   return 0;
 }
 
 uint32_t
 DMA_config_dump(void){
 
-  printf("SANITY DUMP\n");
-  printf("inj_grp counter permission val: %x %x\n", sg_inj_grp.permissions[0], sg_inj_grp.permissions[1]);
-  printf("inj_grp subgroup permission val: %x\n", sg_inj_grp.grp_permissions);
-  printf("rec_grp counter permission val: %x %x\n", sg_rec_grp.permissions[0], sg_rec_grp.permissions[1]);
-  printf("rec_grp subgroup permission val: %x\n", sg_rec_grp.grp_permissions);
+  if(VERBOSE){
+    printf("SANITY DUMP\n");
+    printf("inj_grp counter permission val: %x %x\n", sg_inj_grp.permissions[0], sg_inj_grp.permissions[1]);
+    printf("inj_grp subgroup permission val: %x\n", sg_inj_grp.grp_permissions);
+    printf("rec_grp counter permission val: %x %x\n", sg_rec_grp.permissions[0], sg_rec_grp.permissions[1]);
+    printf("rec_grp subgroup permission val: %x\n", sg_rec_grp.grp_permissions);
 
-  unsigned int val;
-  void *addr, *max;
-  int i;
-  for(i=0; i<SG_TRACKS; i++){
-    val = DMA_CounterGetValueById( &sg_inj_grp, i);
-    addr = DMA_CounterGetBaseById( &sg_inj_grp, i);
-    max = DMA_CounterGetMaxById( &sg_inj_grp, i);
-    printf("counter inj_grp %d: %d, %lx, %lx\n",i, val, addr,max);
-    val = DMA_CounterGetValueById( &sg_rec_grp, i);
-    addr = DMA_CounterGetBaseById( &sg_rec_grp, i);
-    max = DMA_CounterGetMaxById( &sg_rec_grp, i);
-    printf("counter rec_grp %d: %d, %lx, %lx\n",i, val, addr,max);
+    unsigned int val;
+    void *addr, *max;
+    int i;
+    for(i=0; i<SG_TRACKS; i++){
+      val = DMA_CounterGetValueById( &sg_inj_grp, i);
+      addr = DMA_CounterGetBaseById( &sg_inj_grp, i);
+      max = DMA_CounterGetMaxById( &sg_inj_grp, i);
+      printf("counter inj_grp %d: %d, %lx, %lx\n",i, val, addr,max);
+      val = DMA_CounterGetValueById( &sg_rec_grp, i);
+      addr = DMA_CounterGetBaseById( &sg_rec_grp, i);
+      max = DMA_CounterGetMaxById( &sg_rec_grp, i);
+      printf("counter rec_grp %d: %d, %lx, %lx\n",i, val, addr,max);
+    }
   }
 
   return 0;
@@ -204,7 +208,8 @@ DMA_readv(void* in, DMA_iovec *iov, int iovcnt)
     if (Kernel_Rank2Coord(iov[i].dst_rank, &nextx, &nexty, &nextz, &nextt) != 0)
       printf("Kernal_Ranks2Coords\n");
 
-     printf("%d: Attemp %db read from rank %d t: %d->%d \n", sg_rank, orig, iov[i].dst_rank, freetrack, iov[i].track);
+    if(VERBOSE)
+      printf("%d: Attempt %db read from rank %d t: %d->%d \n", sg_rank, orig, iov[i].dst_rank, freetrack, iov[i].track);
 
     if( DMA_TorusDirectPutDescriptor(&payload,
         selfx, selfy, selfz, 0, 0,  

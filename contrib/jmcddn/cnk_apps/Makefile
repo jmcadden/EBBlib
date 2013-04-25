@@ -21,7 +21,7 @@ mini: ${OBJS} ${HDRS}
 sg: ${OBJS} ${HDRS} 
 	${CPP} sg-app.c ${CXXFLAGS} $(OBJS) $(LIBS) -o sg-app
 
-dmem: ${OBJS} ${HDRS} 
+dmem: ${OBJS} ${HDRS} dmem.c
 	${CPP} dmem.c ${CXXFLAGS} $(OBJS) $(LIBS) -o dmem
 
 # Test Runs ##############################################

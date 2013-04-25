@@ -1,7 +1,8 @@
 // TESTS CONTROLS 
 #define P2P_LOCAL   0
-#define P2P_REMOTE  1
-#define VERBOSE     0
+#define P2P_REMOTE  0
+#define P2P_DSM     1
+#define VERBOSE     1
 //
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,6 +21,7 @@
 #define QUADWORD QUAD * 4
 #define BUFFERLEN QUADWORD
 #define PSIZE 1024
+#define MB  1048576
 
 typedef uint32_t  val; 
 typedef uint32_t  id;
@@ -30,13 +32,16 @@ typedef uint32_t  offset;
 id myid;
 uint32_t blocksize;
 _BGP_Personality_t ps;
-uint32_t dmem_track;
+uint32_t dmem_track, dmem_full;
+void *va_min, *va_max;
+val *vps, *vpr; 
 
 val dmem_base[PSIZE] __attribute__ ((aligned(QUAD)));
 val input __attribute__ ((aligned(QUAD)));
-
 key kstart;
 key kend;
+
+/***************************************************/
 
 inline id
 home(key k) { return k / PSIZE; }
@@ -46,6 +51,8 @@ off(key k) { return k % PSIZE; }
 
 inline int
 local(id i) { return i == myid; }
+
+/***************************************************/
 
 void
 dmem_put(key k, val a)
@@ -88,18 +95,43 @@ dmem_get(key k)
   return v;
 }
 
+/***************************************************/
+
 int dmem_init(void)
 {
   int rc=-1;
 
   key k;
+  DMA_AddressingInitPhase1();
   Kernel_GetPersonality(&ps, sizeof(ps)); 
   myid = ps.Network_Config.Rank;
   blocksize = BGP_Personality_numComputeNodes(&ps);
+  
+  // DSM pointers
+  int i,j;
+  vps = malloc(MB*6);
+  vpr = malloc(MB*6);
+  for(i=0; i<6; i++)
+    for(j=0; j<MB; j++)
+      vps[(i*MB)+j] = i+1;
+      vpr[(i*MB)+j] = 0;
+
+
+  printf("vps=%p\n", vps);
+
+  /// Address Space Alloc
+  DMA_AddressingGetMinMaxVa(&va_min, &va_max);
+  if(myid == 0 && VERBOSE){
+    printf("addr range min->max: %p -> %p \n",va_min, va_max);
+    printf("addr diff: %p \n",va_max-va_min);
+    printf("an addr: %p -  %p = %p \n", &myid, va_min, (int)&myid-(int)va_min);
+  }
 
   DMA_sginit(myid);
   dmem_track = DMA_gettrack();
   DMA_settrack(dmem_track, PSIZE*sizeof(val), dmem_base); 
+  dmem_full = DMA_gettrack();
+  DMA_settrack(dmem_full, (uint32_t)(va_max-va_min-1), va_min); 
 
   if(VERBOSE)
     printf("%s #%d/%d finished init\n",__func__, myid, blocksize);
@@ -121,11 +153,10 @@ int
 main(void){
   int nextloc;
   uint64_t stime, etime, ttime;
-  val v;
-  dmem_init();
-
+  val v = 0;
   int i;
-
+  //
+  dmem_init();
   nextloc = (myid + 1) % blocksize;
   GlobInt_Barrier(0, NULL, NULL);
 
@@ -147,11 +178,13 @@ if(P2P_REMOTE){
     
     if(myid == i)
     {
-      printf("%s #%d: remote test \n",__func__, myid);
+      if(VERBOSE) 
+        printf("%s #%d: remote test \n",__func__, myid);
       v = dmem_get(nextloc * PSIZE);
-      printf("%d: v=%d  %llu\n", myid, v);
+      if(VERBOSE)
+        printf("%d: v=%d  %llu\n", myid, v);
     }
-  
+    
     GlobInt_Barrier(0, NULL, NULL);
   }
 
@@ -159,103 +192,39 @@ if(P2P_REMOTE){
     printf("%s #%d: remote test finished\n",__func__, myid);
   
 }
+//
+if(P2P_DSM && myid == 0){
+
+
+      if(VERBOSE) 
+        printf("%s #%d: dsm  test \n",__func__, myid);
+      // lets read the ID of the next node
+
+      DMA_iovec iovec;
+      //((int)&myid-(int)va_min));
+      DMA_sg_setvec(&iovec, (myid+1)%16, dmem_full, MB*6, (uint32_t)vps - (uint32_t)va_min);
+      // make request (blocking)
+      DMA_readv(vpr, &iovec, 1);
+      //
+      if(VERBOSE)
+        printf("%d: v=%d \n", myid, v);
+  
+    GlobInt_Barrier(0, NULL, NULL);
+
+  if(VERBOSE)
+    printf("%s #%d: dsm test finished\n",__func__, myid);
+  
+}
 
   etime = _bgp_GetTimeBase();
-  
+  /*** TEST OVER *****/
   ttime = etime - stime;
-
-
   printf("%d: v=%d  %llu\n", myid, v, ttime);
   GlobInt_Barrier(0, NULL, NULL);
 
+  if(myid == 0 && VERBOSE)
+    printf("Test finish sucessfully.\n");
 
-  if(myid == 0)
-    printf("finish.\n");
   return 1;
 }
 
-#if 0
-int
-main (void){
- 
-  int i, orig, newv;
-  int track;
-  _BGP_Personality_t ps;
-  uint32_t rank, blocksize;
-
-  Kernel_GetPersonality(&ps, sizeof(ps)); 
-  rank = ps.Network_Config.Rank;
-  blocksize = BGP_Personality_numComputeNodes(&ps);
-
-  uint32_t buf[blocksize] __attribute__ ((aligned(QUAD)));
-
-  for(i=0; i<blocksize; i++)
-    buf[i] = rank; // fill entire buffer with the node rank
-
-  // init scatter-gather
-  DMA_sginit(rank);
-  track = DMA_gettrack();
-  DMA_settrack(track, blocksize*sizeof(uint32_t), buf); 
-  printf("#%d/%d tk:%d finished init\n",rank, blocksize, track);
-
-  orig = newv = DMA_check_rec(0);
-
-  GlobInt_Barrier(0, NULL, NULL);
-
-  /* each node has created a s-g track, consisting of a buffer of integers
-   * corrosponding to that nodes rank */ 
-
-  if(rank != 0)
-  {
-    while(1){
-
-      while(orig == newv)
-      { newv = DMA_check_rec(0); }
-
-      printf("%d:", rank); 
-      for(i=0; i<blocksize; i++)
-        printf("%d,",buf[i]); 
-      printf("\n"); 
-
-      orig = newv = DMA_check_rec(0);
-
-      GlobInt_Barrier(0, NULL, NULL);
-    }
-  }
-  else // rank == 0 
-  {
-    // _bgp_Delay(3000000);
-    //DMA_config_dump();
-
-    DMA_iovec iovec[blocksize-1];
-
-    // Attempted to write to the track of each nodes, offset by node rank
-    printf("SCATTER TEST \n");
-  
-    // create IO vector
-    for(i=0; i<blocksize; i++)
-      DMA_sg_setvec( &iovec[i], i+1, track, 4, (i+1)*4);
-
-    DMA_writev(buf, iovec, blocksize-1);
-
-    GlobInt_Barrier(0, NULL, NULL);
-    
-    printf("GATHER TEST \n");
-    for(i=0; i<blocksize; i++)
-      DMA_sg_setvec( &iovec[i], i+1, 0, 4, 0);
-
-
-    DMA_readv(buf+1, iovec, blocksize-1);
-
-    printf("gt:", rank); 
-    for(i=0; i<blocksize; i++)
-      printf("%d,",buf[i]); 
-    printf("\n"); 
-
-  }
-
-  while(1)
-    ;
-  return 0;
-}
-#endif

@@ -19,7 +19,7 @@ typedef struct DMA_iovec_s {
 } DMA_iovec;
 
 unsigned int
-DMA_settrack(unsigned int track, int len, void* buff);
+DMA_settrack(unsigned int track, unsigned int len, void* buff);
 
 unsigned int
 DMA_sginit(uint32_t myrank);
